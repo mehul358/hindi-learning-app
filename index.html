@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hindi Fun! Sentences</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Balsamiq+Sans:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #F7F8FC;
+            --bg-card: #FFFFFF;
+            --text-primary: #1F2937;
+            --text-secondary: #6B7280;
+            --primary: #4A47A3;
+            --primary-light: #AD9DFA;
+            --accent-green: #34D399;
+            --accent-red: #F87171;
+            --accent-yellow: #FBBF24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+        }
+        .font-balsamiq {
+            font-family: 'Balsamiq Sans', cursive;
+        }
+        
+        /* Main App Structure */
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 500px;
+            margin: auto;
+            background-color: white;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+            overflow: hidden; /* Prevent body scroll */
+        }
+        main {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            position: relative;
+            /* Add padding to the bottom to prevent content from being hidden by the nav bar */
+            padding-bottom: 80px; 
+        }
+
+        /* Bottom Navigation */
+        #bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            padding: 0.5rem 0;
+            border-top: 1px solid #E5E7EB;
+            background-color: var(--bg-card);
+            transition: transform 0.3s ease-in-out;
+            position: fixed; /* Changed to fixed for overlay behavior */
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-width: 500px;
+            margin: auto;
+            z-index: 30;
+        }
+        #bottom-nav.hide {
+            transform: translateY(100%);
+        }
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            color: var(--text-secondary);
+            transition: color 0.2s, transform 0.2s;
+            padding: 0.5rem;
+            cursor: pointer;
+        }
+        .nav-btn svg {
+            width: 28px;
+            height: 28px;
+            stroke-width: 2;
+        }
+        .nav-btn.active {
+            color: var(--primary);
+            transform: scale(1.05);
+        }
+        
+        /* Section Transitions */
+        .page-section {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .page-section.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Custom Card Style */
+        .custom-card {
+            background-color: var(--bg-card);
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 16px rgba(149, 157, 165, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            overflow: hidden;
+        }
+        .custom-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(149, 157, 165, 0.15);
+        }
+
+        /* Modal & Feedback */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: var(--bg-card);
+            padding: 2rem;
+            border-radius: 2rem;
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+        .modal-overlay.visible .modal-content {
+            transform: scale(1);
+        }
+
+        /* Recording Button */
+        .record-btn.recording {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(248, 113, 113, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); }
+        }
+        
+        /* Confetti Animation */
+        .confetti {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 20px;
+            background: var(--accent-yellow);
+            top: -50px;
+            opacity: 0;
+        }
+        .confetti-piece:nth-child(2) { background: var(--accent-green); }
+        .confetti-piece:nth-child(3) { background: var(--primary-light); }
+        .confetti-piece:nth-child(4) { background: var(--accent-red); }
+        
+        /* Custom Dropdown */
+        .custom-dropdown-options {
+            display: none;
+            position: absolute;
+            background-color: white;
+            width: 100%;
+            border-radius: 1rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            z-index: 10;
+            max-height: 300px; /* Increased height */
+            overflow-y: auto;
+            border: 1px solid #eee;
+            transform: translateY(4px);
+        }
+        .custom-dropdown-options.show {
+            display: block;
+        }
+        .custom-dropdown-option {
+            padding: 1rem 1.25rem; /* Increased padding */
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-weight: 600; /* Bolder font */
+            font-size: 1.125rem; /* Larger font size */
+        }
+        .custom-dropdown-option:hover {
+            background-color: #f3f4f6;
+        }
+
+        /* Language Toggle */
+        .lang-toggle-btn {
+            background-color: #E5E7EB;
+            color: var(--text-secondary);
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .lang-toggle-btn.active {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        /* Loading Spinner */
+        #loading-spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid var(--primary);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Horizontal Scroll for Story Topics */
+        #story-topics-container {
+            display: flex;
+            overflow-x: auto;
+            padding-bottom: 1rem; /* Space for scrollbar */
+            scrollbar-width: none; /* Firefox */
+        }
+        #story-topics-container::-webkit-scrollbar {
+            display: none; /* Safari and Chrome */
+        }
+        #story-topics-container .topic-button {
+            flex-shrink: 0;
+            width: 140px;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div id="app-container">
+        <!-- Main Content Area -->
+        <main>
+            <div id="loading-spinner" class="absolute inset-0 flex items-center justify-center bg-white z-50"></div>
+            
+            <!-- Lessons Section -->
+            <section id="lessons" class="page-section">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-2xl font-balsamiq">Learn Sentences</h2>
+                    <div id="custom-dropdown-container" class="relative w-56">
+                        <!-- Custom Dropdown will be built here by JS -->
+                    </div>
+                </div>
+                <div class="flex justify-end mb-6">
+                     <div class="flex p-1 bg-gray-200 rounded-full">
+                        <button id="toggle-dual-lessons" onclick="setLanguageMode('dual')" class="lang-toggle-btn font-bold py-1 px-3 rounded-full text-sm">A / अ</button>
+                        <button id="toggle-hindi-lessons" onclick="setLanguageMode('hindi')" class="lang-toggle-btn font-bold py-1 px-3 rounded-full text-sm">अ</button>
+                    </div>
+                </div>
+                <div id="lesson-grid" class="flex flex-col gap-4">
+                    <!-- Lesson cards injected here -->
+                </div>
+            </section>
+
+            <!-- Speak & Repeat Section -->
+            <section id="speak" class="page-section">
+                <h2 class="text-2xl font-balsamiq text-center mb-6">Speak & Repeat</h2>
+                <div id="speak-card" class="bg-white p-6 rounded-3xl shadow-lg max-w-md mx-auto text-center"></div>
+                <div class="text-center mt-6">
+                     <button id="record-btn" class="record-btn bg-red-400 hover:bg-red-500 transition-colors text-white font-bold p-5 rounded-full text-4xl shadow-lg">🎤</button>
+                    <p id="speech-feedback" class="mt-4 text-lg font-semibold h-8 text-gray-500"></p>
+                </div>
+                 <div class="text-center mt-8">
+                    <button onclick="loadSpeakSection()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-5 rounded-full transition-colors">Next Sentence</button>
+                </div>
+            </section>
+
+            <!-- Stories Section -->
+            <section id="stories" class="page-section">
+                 <h2 class="text-2xl font-balsamiq text-center mb-6">Listen to Stories</h2>
+                 <div class="flex justify-end mb-6">
+                     <div class="flex p-1 bg-gray-200 rounded-full">
+                        <button id="toggle-dual-stories" onclick="setLanguageMode('dual')" class="lang-toggle-btn font-bold py-1 px-3 rounded-full text-sm">A / अ</button>
+                        <button id="toggle-hindi-stories" onclick="setLanguageMode('hindi')" class="lang-toggle-btn font-bold py-1 px-3 rounded-full text-sm">अ</button>
+                    </div>
+                </div>
+                 <div id="story-topics-container" class="flex overflow-x-auto pb-4 space-x-4">
+                     <!-- Story Topic Buttons will be injected here -->
+                 </div>
+                 <div id="story-display-container" class="space-y-4 mt-4">
+                     <!-- Stories for the selected topic will be displayed here -->
+                 </div>
+            </section>
+
+            <!-- Quiz Section -->
+            <section id="quiz" class="page-section">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-balsamiq text-center">Quiz Time!</h2>
+                    <div id="star-counter-wrapper" class="flex items-center gap-2 bg-yellow-100 text-yellow-600 font-bold px-4 py-2 rounded-full">
+                        <span class="text-xl">⭐</span>
+                        <span id="star-count" class="text-lg">0</span>
+                    </div>
+                </div>
+                 <div class="text-center bg-white p-4 rounded-2xl shadow-lg max-w-md mx-auto">
+                    <p class="text-lg mb-2">Listen and find the right picture!</p>
+                    <button id="play-quiz-audio" class="bg-green-400 hover:bg-green-500 transition-colors text-white font-bold py-3 px-6 rounded-full text-xl">
+                        🔊 Play Sound
+                    </button>
+                </div>
+                <div id="quiz-options" class="grid grid-cols-2 gap-4 mt-6 max-w-lg mx-auto"></div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="page-section">
+                <h2 class="text-2xl font-balsamiq text-center mb-6">Settings</h2>
+                <div class="space-y-6 max-w-md mx-auto">
+                    <div>
+                        <label for="english-voice-select" class="block text-lg font-medium text-gray-700">English Voice</label>
+                        <select id="english-voice-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-lg p-2"></select>
+                    </div>
+                    <div>
+                        <label for="hindi-voice-select" class="block text-lg font-medium text-gray-700">Hindi Voice</label>
+                        <select id="hindi-voice-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-lg p-2"></select>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav id="bottom-nav">
+             <button onclick="showSection('lessons')" class="nav-btn" data-section="lessons">
+                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                 <span>Learn</span>
+             </button>
+             <button onclick="showSection('stories')" class="nav-btn" data-section="stories">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                 <span>Stories</span>
+             </button>
+             <button onclick="showSection('speak')" class="nav-btn" data-section="speak">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg>
+                 <span>Speak</span>
+             </button>
+             <button onclick="showSection('quiz')" class="nav-btn" data-section="quiz">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
+                 <span>Quiz</span>
+             </button>
+             <button onclick="showSection('settings')" class="nav-btn" data-section="settings">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                 <span>Settings</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span id="feedback-emoji" class="text-8xl"></span>
+            <p id="feedback-text" class="text-3xl font-balsamiq text-gray-700"></p>
+        </div>
+    </div>
+    
+    <!-- Confetti Container -->
+    <div id="confetti-container" class="confetti"></div>
+
+    <script>
+        // --- DATA (will be fetched) ---
+        let lessons = [];
+        let stories = [];
+        let allSentences = [];
+
+        let starCount = 0;
+        let currentSpeakSentence, currentQuizWord, currentQuestion;
+        let languageMode = 'hindi'; // 'dual' or 'hindi'
+        let currentLessonIndex = 0;
+        let availableVoices = [];
+        
+        // --- Speech Recognition Setup ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        let isRecognizing = false;
+        let recognitionMode = null;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'hi-IN';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => { isRecognizing = true; const el = document.getElementById(recognitionMode === 'speak' ? 'speech-feedback' : 'qa-feedback'); if (el) el.textContent = 'Listening... 👂'; document.getElementById(recognitionMode === 'speak' ? 'record-btn' : 'qa-record-btn').classList.add('recording'); };
+            recognition.onend = () => { isRecognizing = false; const el = document.getElementById(recognitionMode === 'speak' ? 'speech-feedback' : 'qa-feedback'); if (el && el.textContent === 'Listening... 👂') el.textContent = ''; document.getElementById(recognitionMode === 'speak' ? 'record-btn' : 'qa-record-btn').classList.remove('recording'); };
+            recognition.onresult = (event) => { const transcript = event.results[0][0].transcript.toLowerCase(); if (recognitionMode === 'speak') processSpeakResult(transcript); else if (recognitionMode === 'qa') processQaResult(transcript); };
+            recognition.onerror = (event) => { console.error("Speech recognition error", event.error); const el = document.getElementById(recognitionMode === 'speak' ? 'speech-feedback' : 'qa-feedback'); if (event.error === 'not-allowed' || event.error === 'service-not-allowed') el.textContent = 'Please allow microphone!'; else el.textContent = 'Oops! Try again.'; };
+        }
+
+        // --- TTS using Web Speech API ---
+        function playSound(primaryText, secondaryText = null) {
+            window.speechSynthesis.cancel(); // Stop any currently playing speech
+
+            if (languageMode === 'dual' && secondaryText) {
+                const englishUtterance = new SpeechSynthesisUtterance(secondaryText);
+                const savedEnglishVoiceURI = localStorage.getItem('englishVoiceURI');
+                const englishVoice = availableVoices.find(v => v.voiceURI === savedEnglishVoiceURI);
+                englishUtterance.voice = englishVoice || availableVoices.find(v => v.lang.startsWith('en-'));
+                englishUtterance.lang = 'en-US';
+                englishUtterance.rate = 0.9;
+
+                const hindiUtterance = new SpeechSynthesisUtterance(primaryText);
+                const savedHindiVoiceURI = localStorage.getItem('hindiVoiceURI');
+                const hindiVoice = availableVoices.find(v => v.voiceURI === savedHindiVoiceURI);
+                hindiUtterance.voice = hindiVoice || availableVoices.find(v => v.lang.startsWith('hi-'));
+                hindiUtterance.lang = 'hi-IN';
+                hindiUtterance.rate = 0.9;
+
+                englishUtterance.onend = () => {
+                    window.speechSynthesis.speak(hindiUtterance);
+                };
+                window.speechSynthesis.speak(englishUtterance);
+            } else {
+                const utterance = new SpeechSynthesisUtterance(primaryText);
+                if (/^[a-zA-Z0-9\s.,?!']+$/.test(primaryText)) {
+                    const savedEnglishVoiceURI = localStorage.getItem('englishVoiceURI');
+                    utterance.voice = availableVoices.find(v => v.voiceURI === savedEnglishVoiceURI);
+                    utterance.lang = 'en-US';
+                } else {
+                    const savedHindiVoiceURI = localStorage.getItem('hindiVoiceURI');
+                    utterance.voice = availableVoices.find(v => v.voiceURI === savedHindiVoiceURI);
+                    utterance.lang = 'hi-IN';
+                }
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // --- UI Control ---
+        function showSection(sectionId) {
+            document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.nav-btn[data-section="${sectionId}"]`).classList.add('active');
+            
+            const starCounterWrapper = document.getElementById('star-counter-wrapper');
+            if (starCounterWrapper) {
+                starCounterWrapper.style.display = (sectionId === 'quiz') ? 'flex' : 'none';
+            }
+
+            const handler = { lessons: () => loadLessons(currentLessonIndex), speak: loadSpeakSection, stories: loadStoriesSection, quiz: startQuiz, settings: () => {} };
+            if(handler[sectionId]) handler[sectionId]();
+        }
+        function updateStarCount() { starCount++; const el = document.getElementById('star-count'); el.innerText = starCount; el.parentElement.style.transform = 'scale(1.1)'; setTimeout(() => el.parentElement.style.transform = 'scale(1)', 200); }
+        function showFeedback(correct, customText = '') {
+            const modal = document.getElementById('feedback-modal');
+            const emoji = document.getElementById('feedback-emoji');
+            const text = document.getElementById('feedback-text');
+            if (correct) {
+                emoji.innerText = '🎉'; 
+                text.innerText = customText || 'शाबाश!'; 
+                text.style.color = 'var(--accent-green)';
+                playSound(customText || 'शाबाश!'); 
+                updateStarCount(); 
+                triggerConfetti();
+            } else {
+                emoji.innerText = '🤔'; 
+                text.innerText = 'फिर से कोशिश करो'; 
+                text.style.color = 'var(--accent-red)';
+                playSound('ओह! फिर से कोशिश करो'); 
+            }
+            modal.classList.add('visible');
+            setTimeout(() => modal.classList.remove('visible'), 2000);
+        }
+        
+        // --- Confetti ---
+        function triggerConfetti() {
+            const container = document.getElementById('confetti-container');
+            for (let i = 0; i < 50; i++) {
+                const confettiPiece = document.createElement('div');
+                confettiPiece.classList.add('confetti-piece');
+                confettiPiece.style.left = Math.random() * 100 + 'vw';
+                confettiPiece.style.animation = `fall ${Math.random() * 2 + 3}s linear ${Math.random() * 2}s forwards`;
+                container.appendChild(confettiPiece);
+                setTimeout(() => confettiPiece.remove(), 5000);
+            }
+        }
+        const keyframes = `@keyframes fall { to { transform: translateY(120vh) rotate(${Math.random() * 360}deg); opacity: 1; } }`;
+        const styleSheet = document.createElement("style"); styleSheet.type = "text/css"; styleSheet.innerText = keyframes; document.head.appendChild(styleSheet);
+
+        // --- Lessons Logic ---
+        function setLanguageMode(mode) {
+            languageMode = mode;
+            document.getElementById('toggle-dual-lessons').classList.toggle('active', mode === 'dual');
+            document.getElementById('toggle-hindi-lessons').classList.toggle('active', mode === 'hindi');
+            document.getElementById('toggle-dual-stories').classList.toggle('active', mode === 'dual');
+            document.getElementById('toggle-hindi-stories').classList.toggle('active', mode === 'hindi');
+            
+            const activeSection = document.querySelector('.page-section.active');
+            if (activeSection) {
+                if (activeSection.id === 'lessons') {
+                    loadLessons(currentLessonIndex);
+                } else if (activeSection.id === 'stories') {
+                    loadStoriesSection();
+                }
+            }
+        }
+
+        function handleLessonChange(index) {
+            currentLessonIndex = index;
+            const dropdownButton = document.getElementById('custom-dropdown-button');
+            const optionsContainer = document.getElementById('custom-dropdown-options');
+            dropdownButton.innerHTML = `${lessons[index].emoji} ${lessons[index].title} <span class="ml-auto text-xs">▼</span>`;
+            optionsContainer.classList.remove('show');
+            loadLessons(index);
+        }
+        
+        function populateLessonDropdown() {
+            const container = document.getElementById('custom-dropdown-container');
+            container.innerHTML = ''; // Clear previous
+            
+            const dropdownButton = document.createElement('button');
+            dropdownButton.id = 'custom-dropdown-button';
+            dropdownButton.className = 'bg-purple-100 text-purple-800 font-bold py-2 px-4 rounded-full w-full flex items-center justify-between';
+            dropdownButton.innerHTML = `${lessons[0].emoji} ${lessons[0].title} <span class="ml-auto text-xs">▼</span>`;
+
+            const optionsContainer = document.createElement('div');
+            optionsContainer.id = 'custom-dropdown-options';
+            optionsContainer.className = 'custom-dropdown-options';
+
+            lessons.forEach((lesson, index) => {
+                const option = document.createElement('div');
+                option.className = 'custom-dropdown-option';
+                option.textContent = `${lesson.emoji} ${lesson.title}`;
+                option.dataset.index = index;
+                option.onclick = () => handleLessonChange(index);
+                optionsContainer.appendChild(option);
+            });
+
+            container.appendChild(dropdownButton);
+            container.appendChild(optionsContainer);
+
+            dropdownButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                optionsContainer.classList.toggle('show');
+            });
+        }
+        
+        function loadLessons(lessonIndex) {
+            currentLessonIndex = lessonIndex; // Keep track of current lesson
+            const lesson = lessons[lessonIndex];
+            if (!lesson) return;
+            const grid = document.getElementById('lesson-grid');
+            grid.innerHTML = '';
+            lesson.sentences.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'custom-card p-3 text-center flex flex-col items-center justify-between';
+                card.innerHTML = `
+                    <div class="text-5xl h-20 flex items-center justify-center">${item.image}</div>
+                    <div class="mt-1">
+                        <p class="text-sm font-semibold ${languageMode === 'hindi' ? 'hidden' : ''}">${item.english}</p>
+                        <p class="text-lg font-balsamiq text-gray-700">${item.hindi}</p>
+                    </div>
+                `;
+                card.onclick = () => playSound(item.hindi, item.english);
+                grid.appendChild(card);
+            });
+        }
+
+        // --- Speak & Repeat Logic ---
+        function loadSpeakSection() {
+            currentSpeakSentence = allSentences[Math.floor(Math.random() * allSentences.length)];
+            const card = document.getElementById('speak-card');
+            card.innerHTML = `
+                <p class="text-md text-gray-500 mb-2">Listen and then repeat:</p>
+                <p class="text-3xl font-balsamiq text-gray-800 mb-4">${currentSpeakSentence.hindi}</p>
+                <div class="text-8xl h-32 flex items-center justify-center">${currentSpeakSentence.image}</div>
+                <button onclick="playSound('${currentSpeakSentence.sound}')" class="bg-blue-100 hover:bg-blue-200 text-blue-600 font-bold p-3 rounded-full text-2xl mt-4 transition-colors">🔊</button>
+            `;
+            document.getElementById('speech-feedback').textContent = '';
+            document.getElementById('record-btn').onclick = () => { recognitionMode = 'speak'; if (!isRecognizing) recognition.start(); };
+        }
+        function processSpeakResult(transcript) {
+            document.getElementById('speech-feedback').textContent = `You said: "${transcript}"`;
+            showFeedback(true, 'Great talking!');
+            setTimeout(loadSpeakSection, 2500);
+        }
+
+        // --- Stories Logic ---
+        function loadStoriesSection() {
+            const topicsContainer = document.getElementById('story-topics-container');
+            topicsContainer.innerHTML = '';
+            stories.forEach((topic, index) => {
+                const button = document.createElement('button');
+                button.className = 'custom-card p-4 text-center text-lg font-bold topic-button';
+                button.innerHTML = `<div class="text-4xl mb-2">${topic.emoji}</div><div>${topic.topic}</div>`;
+                button.onclick = () => loadStoryContent(index);
+                topicsContainer.appendChild(button);
+            });
+            // Initially load the first topic's stories
+            loadStoryContent(0);
+        }
+
+        function loadStoryContent(topicIndex) {
+            const storyDisplay = document.getElementById('story-display-container');
+            const topic = stories[topicIndex];
+            storyDisplay.innerHTML = '';
+
+            topic.content.forEach(story => {
+                const card = document.createElement('div');
+                card.className = 'custom-card p-4';
+                card.innerHTML = `
+                    <h3 class="text-xl font-balsamiq mb-2">${story.title}</h3>
+                    <p class="text-gray-600">${languageMode === 'dual' ? story.english : story.hindi}</p>
+                `;
+                card.onclick = () => playSound(story.hindi, story.english);
+                storyDisplay.appendChild(card);
+            });
+        }
+
+        // --- Q&A Logic ---
+        function loadQaSection() {
+            // For now, Q&A uses the original simple questions
+            const questionsData = [
+                { id: 'q_name', question: 'आपका नाम क्या है?', answer_keywords: ['aarit', 'arit', 'aarith', 'मेरा'] },
+                { id: 'q_howareyou', question: 'आप कैसे हैं?', answer_keywords: ['theek', 'thik', 'fine', 'good', 'मैं'] }
+            ];
+            currentQuestion = questionsData[Math.floor(Math.random() * questionsData.length)];
+            const card = document.getElementById('qa-question');
+            card.innerHTML = `
+                <p class="text-md text-gray-500 mb-2">Listen to the question:</p>
+                <p class="text-3xl font-balsamiq text-gray-800 mb-4">${currentQuestion.question}</p>
+                 <button onclick="playSound('${currentQuestion.question}')" class="bg-blue-100 hover:bg-blue-200 text-blue-600 font-bold p-3 rounded-full text-2xl transition-colors">🔊</button>
+            `;
+            document.getElementById('qa-feedback').textContent = '';
+            document.getElementById('qa-record-btn').onclick = () => { recognitionMode = 'qa'; if (!isRecognizing) recognition.start(); };
+        }
+        function processQaResult(transcript) {
+            document.getElementById('qa-feedback').textContent = `You answered: "${transcript}"`;
+            const isCorrect = currentQuestion.answer_keywords.some(keyword => transcript.includes(keyword));
+            if (isCorrect) {
+                if(currentQuestion.id === 'q_name') showFeedback(true, `Nice to meet you, Aarit!`);
+                else showFeedback(true, 'Great answer!');
+                setTimeout(loadQaSection, 2500);
+            } else {
+                showFeedback(false);
+            }
+        }
+
+        // --- Quiz Logic ---
+        function startQuiz() {
+            currentQuizWord = allSentences[Math.floor(Math.random() * allSentences.length)];
+            let options = allSentences.filter(item => item.id !== currentQuizWord.id);
+            options = options.sort(() => 0.5 - Math.random()).slice(0, 3);
+            options.push(currentQuizWord);
+            options = options.sort(() => 0.5 - Math.random());
+
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+            options.forEach(option => {
+                const card = document.createElement('div');
+                card.className = 'custom-card p-2 flex items-center justify-center aspect-square'; // Reduced padding
+                card.innerHTML = `<div class="text-5xl">${option.image}</div>`; // Reduced text size
+                card.onclick = () => checkAnswer(option.id);
+                optionsContainer.appendChild(card);
+            });
+            document.getElementById('play-quiz-audio').onclick = () => playSound(currentQuizWord.sound);
+        }
+        function checkAnswer(selectedId) {
+            if (selectedId === currentQuizWord.id) {
+                showFeedback(true);
+                setTimeout(startQuiz, 2000);
+            } else {
+                showFeedback(false);
+            }
+        }
+
+        // --- Settings Logic ---
+        function populateVoiceSelectors() {
+            availableVoices = window.speechSynthesis.getVoices();
+            const englishSelect = document.getElementById('english-voice-select');
+            const hindiSelect = document.getElementById('hindi-voice-select');
+            
+            englishSelect.innerHTML = '';
+            hindiSelect.innerHTML = '';
+
+            availableVoices.forEach(voice => {
+                const option = document.createElement('option');
+                option.textContent = `${voice.name} (${voice.lang})`;
+                option.value = voice.voiceURI;
+                if (voice.lang.startsWith('en-')) {
+                    englishSelect.appendChild(option);
+                } else if (voice.lang.startsWith('hi-')) {
+                    hindiSelect.appendChild(option);
+                }
+            });
+
+            const savedEnglishVoice = localStorage.getItem('englishVoiceURI');
+            if (savedEnglishVoice) englishSelect.value = savedEnglishVoice;
+
+            const savedHindiVoice = localStorage.getItem('hindiVoiceURI');
+            if (savedHindiVoice) hindiSelect.value = savedHindiVoice;
+
+            englishSelect.onchange = (e) => localStorage.setItem('englishVoiceURI', e.target.value);
+            hindiSelect.onchange = (e) => localStorage.setItem('hindiVoiceURI', e.target.value);
+        }
+        
+        async function loadContentAndInitialize() {
+            const contentUrl = 'https://mehul358.github.io/hindi-learning-app/content.json';
+            try {
+                const response = await fetch(contentUrl);
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.statusText}`);
+                }
+                const data = await response.json();
+                lessons = data.lessons;
+                stories = data.stories;
+                allSentences = lessons.flatMap(lesson => lesson.sentences.map(sentence => ({...sentence, sound: sentence.hindi})));
+
+                // Hide spinner and initialize the rest of the app
+                document.getElementById('loading-spinner').style.display = 'none';
+                initializeApp();
+
+            } catch (error) {
+                console.error("Failed to load content:", error);
+                document.getElementById('loading-spinner').innerHTML = `<p class="text-red-500 text-center">Failed to load content.<br>Please check the console and refresh.</p>`;
+            }
+        }
+
+        function initializeApp() {
+            if (!SpeechRecognition) {
+                document.querySelector('.nav-btn[data-section="speak"]').style.display = 'none';
+            }
+            
+            if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = populateVoiceSelectors;
+            }
+            populateVoiceSelectors();
+
+            populateLessonDropdown();
+            setLanguageMode('hindi'); // Set initial mode
+            showSection('lessons');
+            
+            window.addEventListener('click', () => {
+                const optionsContainer = document.getElementById('custom-dropdown-options');
+                if (optionsContainer) {
+                    optionsContainer.classList.remove('show');
+                }
+            });
+
+            const mainContent = document.querySelector('main');
+            const bottomNav = document.getElementById('bottom-nav');
+            let lastScrollTop = 0;
+            let scrollTimeout;
+
+            mainContent.addEventListener('scroll', () => {
+                clearTimeout(scrollTimeout);
+                let scrollTop = mainContent.scrollTop;
+                if (scrollTop > lastScrollTop) {
+                    bottomNav.classList.add('hide');
+                } else {
+                    bottomNav.classList.remove('hide');
+                }
+                lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+
+                scrollTimeout = setTimeout(() => {
+                    bottomNav.classList.remove('hide');
+                }, 500);
+            });
+        }
+
+        // --- Initial Load ---
+        window.onload = () => {
+            loadContentAndInitialize();
+        };
+    </script>
+</body>
+</html>
