@@ -261,7 +261,7 @@
     <div id="app-container">
         <div id="splash-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
             <video id="splash-video" playsinline>
-                <source src="https://mehul358.github.io/hindi-learning-app/logo.mp4" type="video/mp4">
+                <source src="logo.mp4" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
             <button id="play-splash-btn" class="hidden absolute inset-0 flex items-center justify-center">
@@ -284,7 +284,7 @@
             <!-- Lessons Section -->
             <section id="lessons" class="page-section">
                 <div class="flex justify-between items-center mb-6">
-                    <img src="https://mehul358.github.io/hindi-learning-app/melo.png" alt="App Logo" class="h-16 w-auto">
+                    <img src="melo.png" alt="App Logo" class="h-16 w-auto">
                     <div class="flex flex-col items-end space-y-2">
                         <div id="custom-dropdown-container" class="relative w-56">
                             <!-- Custom Dropdown will be built here by JS -->
@@ -321,7 +321,7 @@
             <!-- Stories Section -->
             <section id="stories" class="page-section">
                  <div class="flex justify-between items-center mb-6">
-                    <img src="https://mehul358.github.io/hindi-learning-app/melo.png" alt="App Logo" class="h-16 w-auto">
+                    <img src="melo.png" alt="App Logo" class="h-16 w-auto">
                     <div class="flex flex-col items-end space-y-2">
                          <div class="h-10"></div> <!-- Spacer for alignment -->
                          <div class="flex p-1 bg-gray-200 rounded-full">
@@ -747,7 +747,7 @@
         }
         
         async function loadContentAndInitialize() {
-            const contentUrl = 'https://mehul358.github.io/hindi-learning-app/content.json';
+            const contentUrl = 'content.json';
             try {
                 const response = await fetch(contentUrl);
                 if (!response.ok) {
