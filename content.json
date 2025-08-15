@@ -1,7 +1,7 @@
 {
   "lessons": [
     { "title": "Greetings", "emoji": "👋", "sentences": [
-        { "id": "l1s1", "english": "Hello, how are you doing?", "hindi": "नमस्ते, आप कैसे कर रहे हैं?", "image": "👋" },
+        { "id": "l1s1", "english": "Hello, how are you doing?", "hindi": "नमस्ते, आप कैसे हैं?", "image": "👋" },
         { "id": "l1s2", "english": "My name is Aarit.", "hindi": "मेरा नाम आरित है।", "image": "👦" },
         { "id": "l1s3", "english": "It is very nice to meet you.", "hindi": "आपसे मिलकर बहुत अच्छा लगा।", "image": "😊" },
         { "id": "l1s4", "english": "What is your name please?", "hindi": "आपका नाम क्या है कृपया?", "image": "🤔" },

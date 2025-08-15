@@ -239,14 +239,25 @@
             flex-shrink: 0;
             width: 140px;
         }
+
+        /* Splash Screen */
+        #splash-screen {
+            transition: opacity 0.5s ease-out;
+        }
+        #splash-screen.fade-out {
+            opacity: 0;
+        }
     </style>
 </head>
 <body class="text-gray-800">
 
     <div id="app-container">
+        <div id="splash-screen" class="fixed inset-0 bg-white flex items-center justify-center z-50">
+            <img src="https://mehul358.github.io/hindi-learning-app/1755252512699.jpg" alt="App Logo" class="w-48 h-48">
+        </div>
         <!-- Main Content Area -->
-        <main>
-            <div id="loading-spinner" class="absolute inset-0 flex items-center justify-center bg-white z-50"></div>
+        <main class="opacity-0 transition-opacity duration-500">
+            <div id="loading-spinner" class="absolute inset-0 flex items-center justify-center bg-white z-40"></div>
             
             <!-- Lessons Section -->
             <section id="lessons" class="page-section">
@@ -262,8 +273,13 @@
                         <button id="toggle-hindi-lessons" onclick="setLanguageMode('hindi')" class="lang-toggle-btn font-bold py-1 px-3 rounded-full text-sm">अ</button>
                     </div>
                 </div>
-                <div id="lesson-grid" class="flex flex-col gap-4">
-                    <!-- Lesson cards injected here -->
+                <div id="lesson-card-container" class="my-8">
+                    <!-- Single lesson card will be injected here -->
+                </div>
+                <div class="flex justify-between items-center mt-6">
+                    <button id="prev-sentence-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 px-6 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+                    <span id="sentence-counter" class="text-gray-600 font-semibold">1 / 20</span>
+                    <button id="next-sentence-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
                 </div>
             </section>
 
@@ -300,7 +316,7 @@
             <!-- Quiz Section -->
             <section id="quiz" class="page-section">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-balsamiq text-center">Quiz Time!</h2>
+                    <h2 class="text-2xl font-balsamiq">Quiz Time!</h2>
                     <div id="star-counter-wrapper" class="flex items-center gap-2 bg-yellow-100 text-yellow-600 font-bold px-4 py-2 rounded-full">
                         <span class="text-xl">⭐</span>
                         <span id="star-count" class="text-lg">0</span>
@@ -377,6 +393,7 @@
         let currentSpeakSentence, currentQuizWord, currentQuestion;
         let languageMode = 'hindi'; // 'dual' or 'hindi'
         let currentLessonIndex = 0;
+        let currentSentenceIndex = 0;
         let availableVoices = [];
         
         // --- Speech Recognition Setup ---
@@ -444,11 +461,6 @@
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.querySelector(`.nav-btn[data-section="${sectionId}"]`).classList.add('active');
             
-            const starCounterWrapper = document.getElementById('star-counter-wrapper');
-            if (starCounterWrapper) {
-                starCounterWrapper.style.display = (sectionId === 'quiz') ? 'flex' : 'none';
-            }
-
             const handler = { lessons: () => loadLessons(currentLessonIndex), speak: loadSpeakSection, stories: loadStoriesSection, quiz: startQuiz, settings: () => {} };
             if(handler[sectionId]) handler[sectionId]();
         }
@@ -500,7 +512,7 @@
             const activeSection = document.querySelector('.page-section.active');
             if (activeSection) {
                 if (activeSection.id === 'lessons') {
-                    loadLessons(currentLessonIndex);
+                    renderCurrentSentence();
                 } else if (activeSection.id === 'stories') {
                     loadStoriesSection();
                 }
@@ -548,35 +560,64 @@
         }
         
         function loadLessons(lessonIndex) {
-            currentLessonIndex = lessonIndex; // Keep track of current lesson
-            const lesson = lessons[lessonIndex];
-            if (!lesson) return;
-            const grid = document.getElementById('lesson-grid');
-            grid.innerHTML = '';
-            lesson.sentences.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'custom-card p-3 text-center flex flex-col items-center justify-between';
-                card.innerHTML = `
-                    <div class="text-5xl h-20 flex items-center justify-center">${item.image}</div>
-                    <div class="mt-1">
-                        <p class="text-sm font-semibold ${languageMode === 'hindi' ? 'hidden' : ''}">${item.english}</p>
-                        <p class="text-lg font-balsamiq text-gray-700">${item.hindi}</p>
-                    </div>
-                `;
-                card.onclick = () => playSound(item.hindi, item.english);
-                grid.appendChild(card);
-            });
+            currentLessonIndex = lessonIndex;
+            currentSentenceIndex = 0;
+            renderCurrentSentence();
+        }
+
+        function renderCurrentSentence() {
+            const lesson = lessons[currentLessonIndex];
+            if (!lesson || !lesson.sentences) return;
+            const item = lesson.sentences[currentSentenceIndex];
+            const container = document.getElementById('lesson-card-container');
+            container.innerHTML = '';
+            
+            const card = document.createElement('div');
+            card.className = 'custom-card p-4 text-center flex flex-col items-center justify-between';
+            card.innerHTML = `
+                <div class="text-6xl h-24 flex items-center justify-center">${item.image}</div>
+                <div class="mt-2">
+                    <p class="text-md font-semibold ${languageMode === 'hindi' ? 'hidden' : ''}">${item.english}</p>
+                    <p class="text-xl font-balsamiq text-gray-700">${item.hindi}</p>
+                </div>
+            `;
+            card.onclick = () => playSound(item.hindi, item.english);
+            container.appendChild(card);
+
+            document.getElementById('sentence-counter').textContent = `${currentSentenceIndex + 1} / ${lesson.sentences.length}`;
+            document.getElementById('prev-sentence-btn').disabled = currentSentenceIndex === 0;
+            document.getElementById('next-sentence-btn').disabled = currentSentenceIndex === lesson.sentences.length - 1;
+        }
+
+        function showNextSentence() {
+            const lesson = lessons[currentLessonIndex];
+            if (currentSentenceIndex < lesson.sentences.length - 1) {
+                currentSentenceIndex++;
+                renderCurrentSentence();
+                const currentSentence = lesson.sentences[currentSentenceIndex];
+                playSound(currentSentence.hindi, currentSentence.english);
+            }
+        }
+
+        function showPreviousSentence() {
+            if (currentSentenceIndex > 0) {
+                currentSentenceIndex--;
+                renderCurrentSentence();
+                const currentSentence = lessons[currentLessonIndex].sentences[currentSentenceIndex];
+                playSound(currentSentence.hindi, currentSentence.english);
+            }
         }
 
         // --- Speak & Repeat Logic ---
         function loadSpeakSection() {
+            allSentences = lessons.flatMap(lesson => lesson.sentences);
             currentSpeakSentence = allSentences[Math.floor(Math.random() * allSentences.length)];
             const card = document.getElementById('speak-card');
             card.innerHTML = `
                 <p class="text-md text-gray-500 mb-2">Listen and then repeat:</p>
                 <p class="text-3xl font-balsamiq text-gray-800 mb-4">${currentSpeakSentence.hindi}</p>
                 <div class="text-8xl h-32 flex items-center justify-center">${currentSpeakSentence.image}</div>
-                <button onclick="playSound('${currentSpeakSentence.sound}')" class="bg-blue-100 hover:bg-blue-200 text-blue-600 font-bold p-3 rounded-full text-2xl mt-4 transition-colors">🔊</button>
+                <button onclick="playSound('${currentSpeakSentence.hindi}')" class="bg-blue-100 hover:bg-blue-200 text-blue-600 font-bold p-3 rounded-full text-2xl mt-4 transition-colors">🔊</button>
             `;
             document.getElementById('speech-feedback').textContent = '';
             document.getElementById('record-btn').onclick = () => { recognitionMode = 'speak'; if (!isRecognizing) recognition.start(); };
@@ -599,7 +640,9 @@
                 topicsContainer.appendChild(button);
             });
             // Initially load the first topic's stories
-            loadStoryContent(0);
+            if (stories.length > 0) {
+                loadStoryContent(0);
+            }
         }
 
         function loadStoryContent(topicIndex) {
@@ -619,37 +662,9 @@
             });
         }
 
-        // --- Q&A Logic ---
-        function loadQaSection() {
-            // For now, Q&A uses the original simple questions
-            const questionsData = [
-                { id: 'q_name', question: 'आपका नाम क्या है?', answer_keywords: ['aarit', 'arit', 'aarith', 'मेरा'] },
-                { id: 'q_howareyou', question: 'आप कैसे हैं?', answer_keywords: ['theek', 'thik', 'fine', 'good', 'मैं'] }
-            ];
-            currentQuestion = questionsData[Math.floor(Math.random() * questionsData.length)];
-            const card = document.getElementById('qa-question');
-            card.innerHTML = `
-                <p class="text-md text-gray-500 mb-2">Listen to the question:</p>
-                <p class="text-3xl font-balsamiq text-gray-800 mb-4">${currentQuestion.question}</p>
-                 <button onclick="playSound('${currentQuestion.question}')" class="bg-blue-100 hover:bg-blue-200 text-blue-600 font-bold p-3 rounded-full text-2xl transition-colors">🔊</button>
-            `;
-            document.getElementById('qa-feedback').textContent = '';
-            document.getElementById('qa-record-btn').onclick = () => { recognitionMode = 'qa'; if (!isRecognizing) recognition.start(); };
-        }
-        function processQaResult(transcript) {
-            document.getElementById('qa-feedback').textContent = `You answered: "${transcript}"`;
-            const isCorrect = currentQuestion.answer_keywords.some(keyword => transcript.includes(keyword));
-            if (isCorrect) {
-                if(currentQuestion.id === 'q_name') showFeedback(true, `Nice to meet you, Aarit!`);
-                else showFeedback(true, 'Great answer!');
-                setTimeout(loadQaSection, 2500);
-            } else {
-                showFeedback(false);
-            }
-        }
-
         // --- Quiz Logic ---
         function startQuiz() {
+            allSentences = lessons.flatMap(lesson => lesson.sentences);
             currentQuizWord = allSentences[Math.floor(Math.random() * allSentences.length)];
             let options = allSentences.filter(item => item.id !== currentQuizWord.id);
             options = options.sort(() => 0.5 - Math.random()).slice(0, 3);
@@ -665,7 +680,7 @@
                 card.onclick = () => checkAnswer(option.id);
                 optionsContainer.appendChild(card);
             });
-            document.getElementById('play-quiz-audio').onclick = () => playSound(currentQuizWord.sound);
+            document.getElementById('play-quiz-audio').onclick = () => playSound(currentQuizWord.hindi);
         }
         function checkAnswer(selectedId) {
             if (selectedId === currentQuizWord.id) {
@@ -718,17 +733,22 @@
                 stories = data.stories;
                 allSentences = lessons.flatMap(lesson => lesson.sentences.map(sentence => ({...sentence, sound: sentence.hindi})));
 
-                // Hide spinner and initialize the rest of the app
-                document.getElementById('loading-spinner').style.display = 'none';
                 initializeApp();
 
             } catch (error) {
                 console.error("Failed to load content:", error);
-                document.getElementById('loading-spinner').innerHTML = `<p class="text-red-500 text-center">Failed to load content.<br>Please check the console and refresh.</p>`;
+                const loadingSpinner = document.getElementById('loading-spinner');
+                if (loadingSpinner) {
+                    loadingSpinner.innerHTML = `<p class="text-red-500 text-center">Failed to load content.<br>Please check the console and refresh.</p>`;
+                }
             }
         }
 
         function initializeApp() {
+            const loadingSpinner = document.getElementById('loading-spinner');
+            if(loadingSpinner) {
+                loadingSpinner.style.display = 'none';
+            }
             if (!SpeechRecognition) {
                 document.querySelector('.nav-btn[data-section="speak"]').style.display = 'none';
             }
@@ -768,6 +788,21 @@
                     bottomNav.classList.remove('hide');
                 }, 500);
             });
+
+            // Hide splash screen after a delay
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                const main = document.querySelector('main');
+                splash.classList.add('fade-out');
+                main.classList.remove('opacity-0');
+                setTimeout(() => {
+                    splash.style.display = 'none';
+                }, 500); // Match the CSS transition duration
+            }, 2000);
+            
+            document.getElementById('prev-sentence-btn').addEventListener('click', showPreviousSentence);
+            document.getElementById('next-sentence-btn').addEventListener('click', showNextSentence);
+
         }
 
         // --- Initial Load ---
