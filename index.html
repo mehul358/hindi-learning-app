@@ -247,13 +247,43 @@
         #splash-screen.fade-out {
             opacity: 0;
         }
+        #splash-video-container {
+            width: 100%;
+            position: relative;
+            padding-top: 100%; /* 1:1 Aspect Ratio for square video */
+        }
+        #splash-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
     </style>
 </head>
 <body class="text-gray-800">
 
     <div id="app-container">
-        <div id="splash-screen" class="fixed inset-0 bg-white flex items-center justify-center z-50">
-            <img src="https://mehul358.github.io/hindi-learning-app/1755252512699.jpg" alt="App Logo" class="w-48 h-48">
+        <div id="splash-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
+            <div id="splash-video-container">
+                <video id="splash-video" playsinline>
+                    <source src="https://mehul358.github.io/hindi-learning-app/logo.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            <button id="play-splash-btn" class="hidden absolute inset-0 flex items-center justify-center">
+                <div class="bg-black bg-opacity-50 rounded-full p-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+            </button>
+            <button id="skip-splash-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
         </div>
         <!-- Main Content Area -->
         <main class="opacity-0 transition-opacity duration-500">
@@ -261,16 +291,16 @@
             
             <!-- Lessons Section -->
             <section id="lessons" class="page-section">
-                <div class="flex justify-between items-center mb-2">
-                    <h2 class="text-2xl font-balsamiq">Learn Sentences</h2>
-                    <div id="custom-dropdown-container" class="relative w-56">
-                        <!-- Custom Dropdown will be built here by JS -->
-                    </div>
-                </div>
-                <div class="flex justify-end mb-6">
-                     <div class="flex p-1 bg-gray-200 rounded-full">
-                        <button id="toggle-dual-lessons" onclick="setLanguageMode('dual')" class="lang-toggle-btn font-bold py-1 px-3 rounded-full text-sm">A / अ</button>
-                        <button id="toggle-hindi-lessons" onclick="setLanguageMode('hindi')" class="lang-toggle-btn font-bold py-1 px-3 rounded-full text-sm">अ</button>
+                <div class="flex justify-between items-center mb-6">
+                    <img src="https://mehul358.github.io/hindi-learning-app/melo.png" alt="App Logo" class="h-16 w-auto">
+                    <div class="flex flex-col items-end space-y-2">
+                        <div id="custom-dropdown-container" class="relative w-56">
+                            <!-- Custom Dropdown will be built here by JS -->
+                        </div>
+                        <div class="flex p-1 bg-gray-200 rounded-full">
+                            <button id="toggle-dual-lessons" onclick="setLanguageMode('dual')" class="lang-toggle-btn font-bold py-1 px-3 rounded-full text-sm">A / अ</button>
+                            <button id="toggle-hindi-lessons" onclick="setLanguageMode('hindi')" class="lang-toggle-btn font-bold py-1 px-3 rounded-full text-sm">अ</button>
+                        </div>
                     </div>
                 </div>
                 <div id="lesson-card-container" class="my-8">
@@ -298,11 +328,14 @@
 
             <!-- Stories Section -->
             <section id="stories" class="page-section">
-                 <h2 class="text-2xl font-balsamiq text-center mb-6">Listen to Stories</h2>
-                 <div class="flex justify-end mb-6">
-                     <div class="flex p-1 bg-gray-200 rounded-full">
-                        <button id="toggle-dual-stories" onclick="setLanguageMode('dual')" class="lang-toggle-btn font-bold py-1 px-3 rounded-full text-sm">A / अ</button>
-                        <button id="toggle-hindi-stories" onclick="setLanguageMode('hindi')" class="lang-toggle-btn font-bold py-1 px-3 rounded-full text-sm">अ</button>
+                 <div class="flex justify-between items-center mb-6">
+                    <img src="https://mehul358.github.io/hindi-learning-app/melo.png" alt="App Logo" class="h-16 w-auto">
+                    <div class="flex flex-col items-end space-y-2">
+                         <div class="h-10"></div> <!-- Spacer for alignment -->
+                         <div class="flex p-1 bg-gray-200 rounded-full">
+                            <button id="toggle-dual-stories" onclick="setLanguageMode('dual')" class="lang-toggle-btn font-bold py-1 px-3 rounded-full text-sm">A / अ</button>
+                            <button id="toggle-hindi-stories" onclick="setLanguageMode('hindi')" class="lang-toggle-btn font-bold py-1 px-3 rounded-full text-sm">अ</button>
+                        </div>
                     </div>
                 </div>
                  <div id="story-topics-container" class="flex overflow-x-auto pb-4 space-x-4">
@@ -789,16 +822,46 @@
                 }, 500);
             });
 
-            // Hide splash screen after a delay
-            setTimeout(() => {
-                const splash = document.getElementById('splash-screen');
-                const main = document.querySelector('main');
-                splash.classList.add('fade-out');
+            const splashScreen = document.getElementById('splash-screen');
+            const splashVideo = document.getElementById('splash-video');
+            const skipSplashBtn = document.getElementById('skip-splash-btn');
+            const playSplashBtn = document.getElementById('play-splash-btn');
+            const main = document.querySelector('main');
+
+            let splashHidden = false;
+
+            function hideSplashScreen() {
+                if (splashHidden) return;
+                splashHidden = true;
+
+                splashVideo.pause(); 
+                splashScreen.classList.add('fade-out');
                 main.classList.remove('opacity-0');
+                
                 setTimeout(() => {
-                    splash.style.display = 'none';
-                }, 500); // Match the CSS transition duration
-            }, 2000);
+                    splashScreen.style.display = 'none';
+                }, 500); 
+            }
+
+            splashVideo.addEventListener('ended', () => {
+                setTimeout(hideSplashScreen, 1000); // 1-second delay
+            });
+
+            skipSplashBtn.addEventListener('click', hideSplashScreen);
+            
+            // Attempt to play video with sound
+            let playPromise = splashVideo.play();
+
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    // Autoplay was prevented. Show a "Play" button.
+                    playSplashBtn.classList.remove('hidden');
+                    playSplashBtn.addEventListener('click', () => {
+                        splashVideo.play();
+                        playSplashBtn.classList.add('hidden');
+                    });
+                });
+            }
             
             document.getElementById('prev-sentence-btn').addEventListener('click', showPreviousSentence);
             document.getElementById('next-sentence-btn').addEventListener('click', showNextSentence);
