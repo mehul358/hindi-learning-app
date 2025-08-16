@@ -262,6 +262,13 @@ main {
 
 
 /* Pack Game */
+.game-info {
+    background-color: var(--primary-light);
+    color: white;
+    border-radius: 0 0 0 1.5rem;
+    padding: 1rem 1.5rem;
+    font-family: 'Balsamiq Sans', cursive;
+}
 .draggable {
     cursor: grab;
     transition: transform 0.2s;

@@ -59,8 +59,13 @@ if (SpeechRecognition) {
 }
 
 // --- TTS using Web Speech API ---
+function stopAllAudio() {
+    window.speechSynthesis.cancel();
+    // If there were other audio sources, I would stop them here as well.
+}
+
 function playSound(primaryText, secondaryText = null) {
-    window.speechSynthesis.cancel(); // Stop any currently playing speech
+    stopAllAudio(); // Stop any currently playing speech
 
     if (languageMode === 'dual' && secondaryText) {
         const englishUtterance = new SpeechSynthesisUtterance(secondaryText);
@@ -115,6 +120,7 @@ async function loadComponent(sectionId) {
 }
 
 async function showSection(sectionId) {
+    stopAllAudio();
     await loadComponent(sectionId);
 
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
@@ -316,6 +322,8 @@ function loadLessons(lessonIndex) {
     currentSentenceIndex = 0;
     populateLessonDropdown();
     renderCurrentSentence();
+    document.getElementById('prev-sentence-btn').addEventListener('click', showPreviousSentence);
+    document.getElementById('next-sentence-btn').addEventListener('click', showNextSentence);
 }
 
 function renderCurrentSentence() {
@@ -489,11 +497,13 @@ function startQuiz() {
     document.getElementById('play-quiz-audio').onclick = () => playSound(currentQuizWord.hindi);
 }
 function checkAnswer(selectedId) {
+    const feedbackEl = document.getElementById('quiz-feedback');
     if (selectedId === currentQuizWord.id) {
-        showFeedback(true);
-        setTimeout(startQuiz, 2000);
+        feedbackEl.innerHTML = `<div class="text-green-500 text-6xl">✔️</div><p class="text-green-500 font-bold">Correct!</p>`;
+        updateStarCount();
+        setTimeout(startQuiz, 1500);
     } else {
-        showFeedback(false);
+        feedbackEl.innerHTML = `<div class="text-red-500 text-6xl">❌</div><p class="text-red-500 font-bold">Try again!</p>`;
     }
 }
 
@@ -538,14 +548,15 @@ function loadPackGame() {
     destination.innerHTML = `<div class="text-6xl">${levelData.destination_emoji}</div>`;
     suitcase.innerHTML = `<div class="text-9xl">${levelData.suitcase_emoji}</div>`;
 
-    const allItems = [...levelData.commands.map(c => c.item), ...levelData.distractor_items];
+    const currentCorrectItem = itemsToPack[0].item;
+    const allItems = [currentCorrectItem, ...levelData.distractor_items];
     conveyorBelt.innerHTML = allItems.sort(() => 0.5 - Math.random()).map(item => `
-        <div class="inline-block p-2 m-2 bg-white rounded-lg shadow-md draggable text-4xl" draggable="true" data-item="${item}">
+        <div class="inline-block p-2 m-2 bg-white rounded-lg shadow-md draggable text-4xl" data-item="${item}">
             ${item}
         </div>
     `).join('');
 
-    addDragAndDropListeners();
+    addItemClickListener();
     playNextPackCommand();
     startPackTimer();
 }
@@ -591,54 +602,31 @@ function playNextPackCommand() {
     }
 }
 
-function addDragAndDropListeners() {
-    const draggables = document.querySelectorAll('.draggable');
-    const suitcase = document.getElementById('suitcase');
-
-    draggables.forEach(draggable => {
-        draggable.addEventListener('dragstart', () => {
-            draggable.classList.add('dragging');
-        });
-
-        draggable.addEventListener('dragend', () => {
-            draggable.classList.remove('dragging');
-        });
-    });
-
-    suitcase.addEventListener('dragover', e => {
-        e.preventDefault();
-        suitcase.classList.add('drag-over');
-    });
-
-    suitcase.addEventListener('dragleave', () => {
-        suitcase.classList.remove('drag-over');
-    });
-
-    suitcase.addEventListener('drop', e => {
-        e.preventDefault();
-        suitcase.classList.remove('drag-over');
-        const dragging = document.querySelector('.dragging');
-        const item = dragging.dataset.item;
-
-        if (item === itemsToPack[0].item) {
-            // Correct item
-            packScore += 10;
-            document.getElementById('pack-score').textContent = packScore;
-            dragging.classList.add('glow');
-            setTimeout(() => {
-                dragging.classList.add('swoosh');
+function addItemClickListener() {
+    const items = document.querySelectorAll('.draggable');
+    items.forEach(itemElement => {
+        itemElement.addEventListener('click', () => {
+            const item = itemElement.dataset.item;
+            if (item === itemsToPack[0].item) {
+                // Correct item
+                packScore += 10;
+                document.getElementById('pack-score').textContent = packScore;
+                itemElement.classList.add('glow');
                 setTimeout(() => {
-                    dragging.classList.add('hidden');
-                }, 500);
-            }, 1000);
-            packedItems.push(itemsToPack.shift());
-            setTimeout(playNextPackCommand, 1500);
-        } else {
-            // Incorrect item
-            dragging.classList.add('shake');
-            setTimeout(() => dragging.classList.remove('shake'), 500);
-            showFeedback(false);
-        }
+                    itemElement.classList.add('swoosh');
+                    setTimeout(() => {
+                        itemElement.classList.add('hidden');
+                    }, 500);
+                }, 1000);
+                packedItems.push(itemsToPack.shift());
+                setTimeout(playNextPackCommand, 1500);
+            } else {
+                // Incorrect item
+                itemElement.classList.add('shake');
+                setTimeout(() => itemElement.classList.remove('shake'), 500);
+                showFeedback(false);
+            }
+        });
     });
 }
 
@@ -709,7 +697,8 @@ function initializeApp() {
         loadingSpinner.style.display = 'none';
     }
     if (!SpeechRecognition) {
-        document.querySelector('.nav-btn[data-section="speak"]').style.display = 'none';
+        const speakButton = document.querySelector('.side-panel-link[data-section="speak"]');
+        if(speakButton) speakButton.style.display = 'none';
     }
 
     if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
@@ -729,8 +718,10 @@ function initializeApp() {
     });
 
     // Side Panel Event Listeners
-    document.getElementById('menu-btn').addEventListener('click', toggleSidePanel);
-    document.getElementById('side-panel-overlay').addEventListener('click', toggleSidePanel);
+    const menuBtn = document.getElementById('menu-btn');
+    const sidePanelOverlay = document.getElementById('side-panel-overlay');
+    if (menuBtn) menuBtn.addEventListener('click', toggleSidePanel);
+    if (sidePanelOverlay) sidePanelOverlay.addEventListener('click', toggleSidePanel);
 
     const splashScreen = document.getElementById('splash-screen');
     const splashVideo = document.getElementById('splash-video');
@@ -738,47 +729,46 @@ function initializeApp() {
     const playSplashBtn = document.getElementById('play-splash-btn');
     const main = document.querySelector('main');
 
-    let splashHidden = false;
+    if (splashScreen && splashVideo && skipSplashBtn && playSplashBtn && main) {
+        let splashHidden = false;
 
-    function hideSplashScreen() {
-        if (splashHidden) return;
-        splashHidden = true;
+        function hideSplashScreen() {
+            if (splashHidden) return;
+            splashHidden = true;
 
-        splashVideo.pause();
-        splashScreen.classList.add('fade-out');
-        main.classList.remove('opacity-0');
+            splashVideo.pause();
+            splashScreen.classList.add('fade-out');
+            main.classList.remove('opacity-0');
+            document.getElementById('menu-btn').disabled = false;
 
-        setTimeout(() => {
-            splashScreen.style.display = 'none';
-        }, 500);
-    }
+            setTimeout(() => {
+                splashScreen.style.display = 'none';
+            }, 500);
+        }
 
-    splashVideo.addEventListener('ended', () => {
-        setTimeout(hideSplashScreen, 1000); // 1-second delay
-    });
-
-    skipSplashBtn.addEventListener('click', hideSplashScreen);
-
-    // Attempt to play video with sound
-    let playPromise = splashVideo.play();
-
-    if (playPromise !== undefined) {
-        playPromise.catch(error => {
-            // Autoplay was prevented. Show a "Play" button.
-            playSplashBtn.classList.remove('hidden');
-            playSplashBtn.addEventListener('click', () => {
-                splashVideo.play();
-                playSplashBtn.classList.add('hidden');
-            });
+        splashVideo.addEventListener('ended', () => {
+            setTimeout(hideSplashScreen, 1000); // 1-second delay
         });
+
+        skipSplashBtn.addEventListener('click', hideSplashScreen);
+
+        // Attempt to play video with sound
+        let playPromise = splashVideo.play();
+
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                // Autoplay was prevented. Show a "Play" button.
+                playSplashBtn.classList.remove('hidden');
+                playSplashBtn.addEventListener('click', () => {
+                    splashVideo.play();
+                    playSplashBtn.classList.add('hidden');
+                });
+            });
+        }
     }
-
-    document.getElementById('prev-sentence-btn').addEventListener('click', showPreviousSentence);
-    document.getElementById('next-sentence-btn').addEventListener('click', showNextSentence);
-
 }
 
 // --- Initial Load ---
-window.onload = () => {
+document.addEventListener('DOMContentLoaded', () => {
     loadContentAndInitialize();
-};
+});
