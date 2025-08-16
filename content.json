@@ -733,34 +733,4 @@
         { "title": "The Moon's Goodnight Kiss", "english": "Every night, the moon would peek into a child's window to make sure they were sleeping well. In the child's dream, the moon would reach down with a soft, silver beam of light and give them a gentle kiss on the forehead. This goodnight kiss from the moon always brought the sweetest dreams.", "hindi": "हर रात, चाँद एक बच्चे की खिड़की में झाँकता था यह सुनिश्चित करने के लिए कि वे अच्छी तरह से सो रहे हैं। बच्चे के सपने में, चाँद प्रकाश की एक नरम, चांदी की किरण के साथ नीचे पहुँचता और उनके माथे पर एक कोमल चुंबन देता। चाँद का यह शुभरात्रि चुंबन हमेशा सबसे मीठे सपने लाता था।" }
     ]}
   ],
-  "pack_game": {
-    "levels": [
-      {
-        "level": 1,
-        "destination_image": "beach.png",
-        "suitcase_image": "backpack.png",
-        "commands": [
-          {"item": "swimming suit", "text": "स्विमिंग सूट पैक करो"},
-          {"item": "book", "text": "किताब पैक करो"},
-          {"item": "hat", "text": "टोपी पैक करो"},
-          {"item": "ball", "text": "गेंद पैक करो"},
-          {"item": "sunglasses", "text": "धूप का चश्मा पैक करो"}
-        ],
-        "distractor_items": ["shoe", "banana", "car", "tree"]
-      },
-      {
-        "level": 2,
-        "destination_image": "school.png",
-        "suitcase_image": "backpack.png",
-        "commands": [
-          {"item": "blue book", "text": "नीली किताब पैक करो"},
-          {"item": "red apple", "text": "लाल सेब पैक करो"},
-          {"item": "green pencil", "text": "हरी पेंसिल पैक करो"},
-          {"item": "yellow ruler", "text": "पीला रूलर पैक करो"},
-          {"item": "purple scissors", "text": "बैंगनी कैंची पैक करो"}
-        ],
-        "distractor_items": ["orange", "train", "bed", "chair"]
-      }
-    ]
-  }
 }

@@ -13,6 +13,8 @@ let packGameData = {};
 let currentPackLevel = 0;
 let itemsToPack = [];
 let packedItems = [];
+let packScore = 0;
+let packTimerInterval;
 
 // --- Levenshtein Distance ---
 function levenshtein(s1, s2) {
@@ -143,25 +145,29 @@ async function showSection(sectionId) {
 }
 
 function updateStarCount() { starCount++; const el = document.getElementById('star-count'); el.innerText = starCount; el.parentElement.style.transform = 'scale(1.1)'; setTimeout(() => el.parentElement.style.transform = 'scale(1)', 200); }
-function showFeedback(correct, customText = '') {
-    const modal = document.getElementById('feedback-modal');
-    const emoji = document.getElementById('feedback-emoji');
-    const text = document.getElementById('feedback-text');
-    if (correct) {
-        emoji.innerText = '🎉';
-        text.innerText = customText || 'शाबाश!';
-        text.style.color = 'var(--accent-green)';
-        playSound(customText || 'शाबाश!');
-        updateStarCount();
-        triggerConfetti();
-    } else {
-        emoji.innerText = '🤔';
-        text.innerText = 'फिर से कोशिश करो';
-        text.style.color = 'var(--accent-red)';
+function showFeedback(correct, customText = null) {
+    if (customText) {
+        const modal = document.getElementById('feedback-modal');
+        const emoji = document.getElementById('feedback-emoji');
+        const text = document.getElementById('feedback-text');
+        if (correct) {
+            emoji.innerText = '🎉';
+            text.innerText = customText || 'शाबाश!';
+            text.style.color = 'var(--accent-green)';
+            playSound(customText || 'शाबाश!');
+            updateStarCount();
+            triggerConfetti();
+        } else {
+            emoji.innerText = '🤔';
+            text.innerText = customText || 'फिर से कोशिश करो';
+            text.style.color = 'var(--accent-red)';
+            playSound(customText || 'ओह! फिर से कोशिश करो');
+        }
+        modal.classList.add('visible');
+        setTimeout(() => modal.classList.remove('visible'), 2000);
+    } else if (!correct) {
         playSound('ओह! फिर से कोशिश करो');
     }
-    modal.classList.add('visible');
-    setTimeout(() => modal.classList.remove('visible'), 2000);
 }
 
 // --- Side Panel ---
@@ -492,10 +498,32 @@ function checkAnswer(selectedId) {
 }
 
 // --- Pack Game Logic ---
+function startPackTimer() {
+    let timeLeft = 60;
+    const timerElement = document.getElementById('pack-timer');
+    timerElement.textContent = timeLeft;
+
+    packTimerInterval = setInterval(() => {
+        timeLeft--;
+        timerElement.textContent = timeLeft;
+        if (timeLeft <= 0) {
+            clearInterval(packTimerInterval);
+            showFeedback(false, "Time's up! Let's try the next trip.");
+            currentPackLevel++;
+            if (currentPackLevel >= packGameData.levels.length) {
+                currentPackLevel = 0;
+            }
+            setTimeout(loadPackGame, 2000);
+        }
+    }, 1000);
+}
+
 function loadPackGame() {
+    clearInterval(packTimerInterval);
     const levelData = packGameData.levels[currentPackLevel];
     itemsToPack = [...levelData.commands];
     packedItems = [];
+    document.getElementById('pack-score').textContent = packScore;
 
     const destination = document.getElementById('destination');
     const suitcase = document.getElementById('suitcase');
@@ -507,18 +535,19 @@ function loadPackGame() {
         conveyorBelt.classList.remove('fast');
     }
 
-    destination.innerHTML = `<img src="${levelData.destination_image}" alt="Destination" class="w-full h-auto rounded-lg">`;
-    suitcase.innerHTML = `<img src="${levelData.suitcase_image}" alt="Suitcase" class="w-full h-auto">`;
+    destination.innerHTML = `<div class="text-6xl">${levelData.destination_emoji}</div>`;
+    suitcase.innerHTML = `<div class="text-9xl">${levelData.suitcase_emoji}</div>`;
 
     const allItems = [...levelData.commands.map(c => c.item), ...levelData.distractor_items];
     conveyorBelt.innerHTML = allItems.sort(() => 0.5 - Math.random()).map(item => `
-        <div class="inline-block p-2 m-2 bg-white rounded-lg shadow-md draggable" draggable="true" data-item="${item}">
-            <img src="items/${item}.png" alt="${item}" class="w-24 h-24 object-contain">
+        <div class="inline-block p-2 m-2 bg-white rounded-lg shadow-md draggable text-4xl" draggable="true" data-item="${item}">
+            ${item}
         </div>
     `).join('');
 
     addDragAndDropListeners();
     playNextPackCommand();
+    startPackTimer();
 }
 
 function showRewardAnimation() {
@@ -548,11 +577,13 @@ function playNextPackCommand() {
         playSound(command.text);
     } else {
         // Level complete
+        clearInterval(packTimerInterval);
         currentPackLevel++;
         if (currentPackLevel >= packGameData.levels.length) {
             showRewardAnimation();
             // Reset game
             currentPackLevel = 0;
+            packScore = 0;
         } else {
             showFeedback(true, "Great job packing! Time for the next trip.");
             setTimeout(loadPackGame, 2000);
@@ -591,6 +622,8 @@ function addDragAndDropListeners() {
 
         if (item === itemsToPack[0].item) {
             // Correct item
+            packScore += 10;
+            document.getElementById('pack-score').textContent = packScore;
             dragging.classList.add('glow');
             setTimeout(() => {
                 dragging.classList.add('swoosh');
@@ -604,6 +637,7 @@ function addDragAndDropListeners() {
             // Incorrect item
             dragging.classList.add('shake');
             setTimeout(() => dragging.classList.remove('shake'), 500);
+            showFeedback(false);
         }
     });
 }
@@ -640,16 +674,22 @@ function populateVoiceSelectors() {
 }
 
 async function loadContentAndInitialize() {
-    const contentUrl = 'content.json';
     try {
-        const response = await fetch(contentUrl);
-        if (!response.ok) {
-            throw new Error(`Network response was not ok: ${response.statusText}`);
+        const [lessonsResponse, packGameResponse] = await Promise.all([
+            fetch('content.json'),
+            fetch('pack_game.json')
+        ]);
+
+        if (!lessonsResponse.ok || !packGameResponse.ok) {
+            throw new Error(`Network response was not ok`);
         }
-        const data = await response.json();
-        lessons = data.lessons;
-        stories = data.stories;
-        packGameData = data.pack_game;
+
+        const lessonsData = await lessonsResponse.json();
+        const packGameDataResponse = await packGameResponse.json();
+
+        lessons = lessonsData.lessons;
+        stories = lessonsData.stories;
+        packGameData = packGameDataResponse;
         allSentences = lessons.flatMap(lesson => lesson.sentences.map(sentence => ({...sentence, sound: sentence.hindi})));
 
         initializeApp();
