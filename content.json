@@ -732,9 +732,7 @@
         { "title": "The Whispering Wind", "english": "A little girl was having a hard time sleeping. In her dream, a gentle wind whispered through her window. It told her a calming story about sleepy bunnies and yawning flowers. The wind's soft voice was like a lullaby, and soon she drifted off into a deep and peaceful sleep.", "hindi": "एक छोटी लड़की को सोने में मुश्किल हो रही थी। उसके सपने में, एक कोमल हवा उसकी खिड़की से फुसफुसाई। उसने उसे नींद में खरगोशों और जम्हाई लेते फूलों के बारे में एक शांत करने वाली कहानी सुनाई। हवा की नरम आवाज एक लोरी की तरह थी, और जल्द ही वह एक गहरी और शांतिपूर्ण नींद में सो गई।" },
         { "title": "The Moon's Goodnight Kiss", "english": "Every night, the moon would peek into a child's window to make sure they were sleeping well. In the child's dream, the moon would reach down with a soft, silver beam of light and give them a gentle kiss on the forehead. This goodnight kiss from the moon always brought the sweetest dreams.", "hindi": "हर रात, चाँद एक बच्चे की खिड़की में झाँकता था यह सुनिश्चित करने के लिए कि वे अच्छी तरह से सो रहे हैं। बच्चे के सपने में, चाँद प्रकाश की एक नरम, चांदी की किरण के साथ नीचे पहुँचता और उनके माथे पर एक कोमल चुंबन देता। चाँद का यह शुभरात्रि चुंबन हमेशा सबसे मीठे सपने लाता था।" }
     ]}
-  ]
-}
-,
+  ],
   "pack_game": {
     "levels": [
       {
@@ -765,3 +763,4 @@
       }
     ]
   }
+}
