@@ -9,6 +9,10 @@ let languageMode = 'hindi'; // 'dual' or 'hindi'
 let currentLessonIndex = 0;
 let currentSentenceIndex = 0;
 let availableVoices = [];
+let packGameData = {};
+let currentPackLevel = 0;
+let itemsToPack = [];
+let packedItems = [];
 
 // --- Levenshtein Distance ---
 function levenshtein(s1, s2) {
@@ -118,11 +122,6 @@ async function showSection(sectionId) {
     if (navButton) {
         navButton.classList.add('active');
     }
-
-let packGameData = {};
-let currentPackLevel = 0;
-let itemsToPack = [];
-let packedItems = [];
 
     const handler = {
         lessons: () => loadLessons(currentLessonIndex),
