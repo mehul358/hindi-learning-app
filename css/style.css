@@ -3,11 +3,11 @@
     --bg-card: #FFFFFF;
     --text-primary: #1F2937;
     --text-secondary: #6B7280;
-    --primary: #4A47A3;
-    --primary-light: #AD9DFA;
+    --primary: #26A3BF;
+    --primary-light: #36D9D9;
     --accent-green: #34D399;
-    --accent-red: #F87171;
-    --accent-yellow: #FBBF24;
+    --accent-red: #F2A7D0;
+    --accent-yellow: #F2C53D;
 }
 body {
     font-family: 'Inter', sans-serif;
@@ -138,9 +138,9 @@ main {
     animation: pulse 1.5s infinite;
 }
 @keyframes pulse {
-    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7); }
-    70% { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(248, 113, 113, 0); }
-    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); }
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(242, 167, 208, 0.7); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(242, 167, 208, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(242, 167, 208, 0); }
 }
 
 /* Confetti Animation */
@@ -261,6 +261,54 @@ main {
 }
 
 
+/* Pack Game */
+.draggable {
+    cursor: grab;
+    transition: transform 0.2s;
+}
+.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+#suitcase.drag-over {
+    border: 4px dashed var(--primary-light);
+}
+#conveyor-belt {
+    animation: conveyor 15s linear infinite;
+}
+#conveyor-belt.fast {
+    animation-duration: 8s;
+}
+@keyframes conveyor {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+}
+.shake {
+    animation: shake 0.5s;
+}
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+    100% { transform: translateX(0); }
+}
+.glow {
+    animation: glow 1s;
+}
+@keyframes glow {
+    0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
+    50% { box-shadow: 0 0 20px 10px rgba(52, 211, 153, 0.7); }
+    100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+}
+.swoosh {
+    animation: swoosh 0.5s forwards;
+}
+@keyframes swoosh {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0.1) translate(200px, -200px); opacity: 0; }
+}
+
 /* Splash Screen */
 #splash-screen {
     transition: opacity 0.5s ease-out;
@@ -274,4 +322,15 @@ main {
     width: auto;
     height: auto;
     object-fit: contain;
+}
+
+/* Reward Animation */
+#reward-animation img {
+    animation: wave 2s ease-in-out infinite;
+}
+
+@keyframes wave {
+    0% { transform: rotate(0deg); }
+    50% { transform: rotate(20deg); }
+    100% { transform: rotate(0deg); }
 }

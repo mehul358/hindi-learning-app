@@ -10,6 +10,29 @@ let currentLessonIndex = 0;
 let currentSentenceIndex = 0;
 let availableVoices = [];
 
+// --- Levenshtein Distance ---
+function levenshtein(s1, s2) {
+    if (s1.length < s2.length) {
+        return levenshtein(s2, s1);
+    }
+    if (s2.length === 0) {
+        return s1.length;
+    }
+    let previousRow = Array.from({ length: s2.length + 1 }, (_, i) => i);
+    for (let i = 0; i < s1.length; i++) {
+        let currentRow = [i + 1];
+        for (let j = 0; j < s2.length; j++) {
+            let insertions = previousRow[j + 1] + 1;
+            let deletions = currentRow[j] + 1;
+            let substitutions = previousRow[j] + (s1[i] !== s2[j]);
+            currentRow.push(Math.min(insertions, deletions, substitutions));
+        }
+        previousRow = currentRow;
+    }
+    return previousRow[s2.length];
+}
+
+
 // --- Speech Recognition Setup ---
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition;
@@ -96,11 +119,17 @@ async function showSection(sectionId) {
         navButton.classList.add('active');
     }
 
+let packGameData = {};
+let currentPackLevel = 0;
+let itemsToPack = [];
+let packedItems = [];
+
     const handler = {
         lessons: () => loadLessons(currentLessonIndex),
         speak: loadSpeakSection,
         stories: loadStoriesSection,
         quiz: startQuiz,
+        pack: loadPackGame,
     };
 
     if(handler[sectionId]) {
@@ -151,8 +180,6 @@ function populateSidePanel() {
             <img src="melo.png" alt="App Logo" class="h-20 w-auto mx-auto mb-4">
             <h2 class="text-2xl font-balsamiq text-center text-primary mb-8">Hindi Fun!</h2>
 
-            <div id="custom-dropdown-container" class="relative mb-4"></div>
-
             <div class="space-y-2">
                 <a href="#" onclick="showSection('lessons')" class="side-panel-link" data-section="lessons">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
@@ -169,6 +196,10 @@ function populateSidePanel() {
                 <a href="#" onclick="showSection('quiz')" class="side-panel-link" data-section="quiz">
                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
                     <span>Quiz</span>
+                </a>
+                <a href="#" onclick="showSection('pack')" class="side-panel-link" data-section="pack">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6h-4V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2z"></path><path d="M8 6v-2h8v2"></path><path d="M12 12v4"></path><path d="M10 14h4"></path></svg>
+                    <span>Pack</span>
                 </a>
             </div>
 
@@ -194,7 +225,6 @@ function populateSidePanel() {
             </div>
         </div>
     `;
-    populateLessonDropdownInPanel();
     populateVoiceSelectors();
     setLanguageMode(languageMode); // Re-apply current language mode to buttons
 }
@@ -238,17 +268,17 @@ function handleLessonChange(index) {
     dropdownButton.innerHTML = `${lessons[index].emoji} ${lessons[index].title} <span class="ml-auto text-xs">▼</span>`;
     optionsContainer.classList.remove('show');
     loadLessons(index);
-    showSection('lessons');
 }
 
-function populateLessonDropdownInPanel() {
+function populateLessonDropdown() {
     const container = document.getElementById('custom-dropdown-container');
     if (!container) return;
     container.innerHTML = ''; // Clear previous
 
     const dropdownButton = document.createElement('button');
     dropdownButton.id = 'custom-dropdown-button';
-    dropdownButton.className = 'bg-purple-100 text-purple-800 font-bold py-3 px-4 rounded-xl w-full flex items-center justify-between text-left';
+    dropdownButton.className = 'text-white font-bold py-3 px-4 rounded-xl w-full flex items-center justify-between text-left';
+    dropdownButton.style.backgroundColor = '#36D9D9';
     dropdownButton.innerHTML = `<div>${lessons[currentLessonIndex].emoji} ${lessons[currentLessonIndex].title}</div> <span class="ml-auto text-xs">▼</span>`;
 
     const optionsContainer = document.createElement('div');
@@ -279,6 +309,7 @@ function populateLessonDropdownInPanel() {
 function loadLessons(lessonIndex) {
     currentLessonIndex = lessonIndex;
     currentSentenceIndex = 0;
+    populateLessonDropdown();
     renderCurrentSentence();
 }
 
@@ -339,10 +370,63 @@ function loadSpeakSection() {
     document.getElementById('speech-feedback').textContent = '';
     document.getElementById('record-btn').onclick = () => { recognitionMode = 'speak'; if (!isRecognizing) recognition.start(); };
 }
+function updateBalloonGraphic(similarity) {
+    const container = document.getElementById('balloon-container');
+    let svg = '';
+    if (similarity > 0.8) {
+        // Burst balloon
+        svg = `
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="40" fill="#F2C53D"/>
+                <path d="M 40 40 L 60 60 M 60 40 L 40 60" stroke="#fff" stroke-width="4" />
+                <path d="M 30 50 L 70 50" stroke="#fff" stroke-width="4" />
+                <path d="M 50 30 L 50 70" stroke="#fff" stroke-width="4" />
+            </svg>
+        `;
+    } else if (similarity > 0.5) {
+        // Very inflated balloon
+        svg = `
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="45" fill="#36D9D9"/>
+                <path d="M 50 95 L 50 100" stroke="#333" stroke-width="2"/>
+            </svg>
+        `;
+    } else if (similarity > 0.2) {
+        // Inflated balloon
+        svg = `
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <ellipse cx="50" cy="55" rx="30" ry="40" fill="#26A3BF"/>
+                <path d="M 50 95 L 50 100" stroke="#333" stroke-width="2"/>
+            </svg>
+        `;
+    } else {
+        // Deflated balloon
+        svg = `
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <path d="M 50 90 C 30 90, 20 70, 50 50 C 80 70, 70 90, 50 90 Z" fill="#F2A7D0"/>
+                 <path d="M 50 90 L 50 100" stroke="#333" stroke-width="2"/>
+            </svg>
+        `;
+    }
+    container.innerHTML = svg;
+}
+
 function processSpeakResult(transcript) {
+    const expected = currentSpeakSentence.hindi.toLowerCase();
+    const distance = levenshtein(transcript, expected);
+    const similarity = 1 - distance / Math.max(transcript.length, expected.length);
+
     document.getElementById('speech-feedback').textContent = `You said: "${transcript}"`;
-    showFeedback(true, 'Great talking!');
-    setTimeout(loadSpeakSection, 2500);
+    updateBalloonGraphic(similarity);
+
+    if (similarity > 0.8) {
+        showFeedback(true, 'Perfect!');
+        setTimeout(loadSpeakSection, 2500);
+    } else if (similarity > 0.5) {
+        showFeedback(false, 'So close! Try again.');
+    } else {
+        showFeedback(false, 'Give it another try!');
+    }
 }
 
 // --- Stories Logic ---
@@ -408,6 +492,124 @@ function checkAnswer(selectedId) {
     }
 }
 
+// --- Pack Game Logic ---
+function loadPackGame() {
+    const levelData = packGameData.levels[currentPackLevel];
+    itemsToPack = [...levelData.commands];
+    packedItems = [];
+
+    const destination = document.getElementById('destination');
+    const suitcase = document.getElementById('suitcase');
+    const conveyorBelt = document.getElementById('conveyor-belt');
+
+    if (currentPackLevel === 2) {
+        conveyorBelt.classList.add('fast');
+    } else {
+        conveyorBelt.classList.remove('fast');
+    }
+
+    destination.innerHTML = `<img src="${levelData.destination_image}" alt="Destination" class="w-full h-auto rounded-lg">`;
+    suitcase.innerHTML = `<img src="${levelData.suitcase_image}" alt="Suitcase" class="w-full h-auto">`;
+
+    const allItems = [...levelData.commands.map(c => c.item), ...levelData.distractor_items];
+    conveyorBelt.innerHTML = allItems.sort(() => 0.5 - Math.random()).map(item => `
+        <div class="inline-block p-2 m-2 bg-white rounded-lg shadow-md draggable" draggable="true" data-item="${item}">
+            <img src="items/${item}.png" alt="${item}" class="w-24 h-24 object-contain">
+        </div>
+    `).join('');
+
+    addDragAndDropListeners();
+    playNextPackCommand();
+}
+
+function showRewardAnimation() {
+    const rewardContainer = document.getElementById('reward-animation');
+    rewardContainer.innerHTML = `
+        <div class="text-center">
+            <img src="melo.png" alt="Melo Waving" class="h-64 w-auto mx-auto mb-8">
+            <h2 class="text-3xl font-balsamiq text-primary">You did it!</h2>
+            <p class="text-lg text-gray-600 mt-2">Melo is ready for his trip!</p>
+            <button onclick="hideRewardAnimation()" class="mt-8 bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-6 rounded-full">Play Again</button>
+        </div>
+    `;
+    rewardContainer.classList.remove('hidden');
+    rewardContainer.classList.add('flex');
+}
+
+function hideRewardAnimation() {
+    const rewardContainer = document.getElementById('reward-animation');
+    rewardContainer.classList.add('hidden');
+    rewardContainer.classList.remove('flex');
+    showSection('lessons'); // Go back to the main screen
+}
+
+function playNextPackCommand() {
+    if (itemsToPack.length > 0) {
+        const command = itemsToPack[0];
+        playSound(command.text);
+    } else {
+        // Level complete
+        currentPackLevel++;
+        if (currentPackLevel >= packGameData.levels.length) {
+            showRewardAnimation();
+            // Reset game
+            currentPackLevel = 0;
+        } else {
+            showFeedback(true, "Great job packing! Time for the next trip.");
+            setTimeout(loadPackGame, 2000);
+        }
+    }
+}
+
+function addDragAndDropListeners() {
+    const draggables = document.querySelectorAll('.draggable');
+    const suitcase = document.getElementById('suitcase');
+
+    draggables.forEach(draggable => {
+        draggable.addEventListener('dragstart', () => {
+            draggable.classList.add('dragging');
+        });
+
+        draggable.addEventListener('dragend', () => {
+            draggable.classList.remove('dragging');
+        });
+    });
+
+    suitcase.addEventListener('dragover', e => {
+        e.preventDefault();
+        suitcase.classList.add('drag-over');
+    });
+
+    suitcase.addEventListener('dragleave', () => {
+        suitcase.classList.remove('drag-over');
+    });
+
+    suitcase.addEventListener('drop', e => {
+        e.preventDefault();
+        suitcase.classList.remove('drag-over');
+        const dragging = document.querySelector('.dragging');
+        const item = dragging.dataset.item;
+
+        if (item === itemsToPack[0].item) {
+            // Correct item
+            dragging.classList.add('glow');
+            setTimeout(() => {
+                dragging.classList.add('swoosh');
+                setTimeout(() => {
+                    dragging.classList.add('hidden');
+                }, 500);
+            }, 1000);
+            packedItems.push(itemsToPack.shift());
+            setTimeout(playNextPackCommand, 1500);
+        } else {
+            // Incorrect item
+            dragging.classList.add('shake');
+            setTimeout(() => dragging.classList.remove('shake'), 500);
+        }
+    });
+}
+
+
 // --- Settings Logic ---
 function populateVoiceSelectors() {
     availableVoices = window.speechSynthesis.getVoices();
@@ -448,6 +650,7 @@ async function loadContentAndInitialize() {
         const data = await response.json();
         lessons = data.lessons;
         stories = data.stories;
+        packGameData = data.pack_game;
         allSentences = lessons.flatMap(lesson => lesson.sentences.map(sentence => ({...sentence, sound: sentence.hindi})));
 
         initializeApp();

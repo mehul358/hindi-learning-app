@@ -734,3 +734,34 @@
     ]}
   ]
 }
+,
+  "pack_game": {
+    "levels": [
+      {
+        "level": 1,
+        "destination_image": "beach.png",
+        "suitcase_image": "backpack.png",
+        "commands": [
+          {"item": "swimming suit", "text": "स्विमिंग सूट पैक करो"},
+          {"item": "book", "text": "किताब पैक करो"},
+          {"item": "hat", "text": "टोपी पैक करो"},
+          {"item": "ball", "text": "गेंद पैक करो"},
+          {"item": "sunglasses", "text": "धूप का चश्मा पैक करो"}
+        ],
+        "distractor_items": ["shoe", "banana", "car", "tree"]
+      },
+      {
+        "level": 2,
+        "destination_image": "school.png",
+        "suitcase_image": "backpack.png",
+        "commands": [
+          {"item": "blue book", "text": "नीली किताब पैक करो"},
+          {"item": "red apple", "text": "लाल सेब पैक करो"},
+          {"item": "green pencil", "text": "हरी पेंसिल पैक करो"},
+          {"item": "yellow ruler", "text": "पीला रूलर पैक करो"},
+          {"item": "purple scissors", "text": "बैंगनी कैंची पैक करो"}
+        ],
+        "distractor_items": ["orange", "train", "bed", "chair"]
+      }
+    ]
+  }
