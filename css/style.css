@@ -265,9 +265,12 @@ main {
 .game-info {
     background-color: var(--primary-light);
     color: white;
-    border-radius: 0 0 0 1.5rem;
-    padding: 1rem 1.5rem;
+    padding: 0.5rem 1rem;
     font-family: 'Balsamiq Sans', cursive;
+    text-align: center;
+    border-radius: 1rem;
+    margin: 0 auto 1rem;
+    max-width: 200px;
 }
 .draggable {
     cursor: grab;
@@ -281,7 +284,7 @@ main {
     border: 4px dashed var(--primary-light);
 }
 #conveyor-belt {
-    animation: conveyor 30s linear infinite;
+    animation: conveyor 10s linear infinite;
 }
 @keyframes conveyor {
     0% { transform: translateX(0); }

@@ -384,39 +384,21 @@ function loadSpeakSection() {
     document.getElementById('prev-speak-btn').addEventListener('click', loadSpeakSection);
     document.getElementById('next-speak-btn').addEventListener('click', loadSpeakSection);
 }
-function getBalloonSvg(level) {
-    const colors = ['#F2A7D0', '#F2C53D', '#36D9D9', '#26A3BF', '#34D399'];
-    const color = colors[level - 1];
-    switch (level) {
-        case 1: // Deflated
-            return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M 50 90 C 30 90, 20 70, 50 50 C 80 70, 70 90, 50 90 Z" fill="${color}"/><path d="M 50 90 L 50 100" stroke="#333" stroke-width="2"/></svg>`;
-        case 2: // Slightly inflated
-            return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="50" cy="70" rx="20" ry="25" fill="${color}"/><path d="M 50 95 L 50 100" stroke="#333" stroke-width="2"/></svg>`;
-        case 3: // Inflated
-            return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="50" cy="60" rx="30" ry="35" fill="${color}"/><path d="M 50 95 L 50 100" stroke="#333" stroke-width="2"/></svg>`;
-        case 4: // Very inflated
-            return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="${color}"/><path d="M 50 90 L 50 100" stroke="#333" stroke-width="2"/></svg>`;
-        case 5: // Burst
-            return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="45" fill="${color}"/><path d="M 40 40 L 60 60 M 60 40 L 40 60" stroke="#fff" stroke-width="4" /><path d="M 30 50 L 70 50" stroke="#fff" stroke-width="4" /><path d="M 50 30 L 50 70" stroke="#fff" stroke-width="4" /></svg>`;
-        default:
-            return '';
-    }
-}
+function updateSpeakProgress(similarity) {
+    const progressBar = document.getElementById('speak-progress');
+    const percentage = Math.round(similarity * 100);
+    progressBar.style.width = `${percentage}%`;
 
-function updateBalloonGraphic(similarity) {
-    const container = document.getElementById('balloon-container');
-    let balloonCount = 0;
-    if (similarity > 0.9) balloonCount = 5;
-    else if (similarity > 0.7) balloonCount = 4;
-    else if (similarity > 0.5) balloonCount = 3;
-    else if (similarity > 0.3) balloonCount = 2;
-    else if (similarity > 0.1) balloonCount = 1;
-
-    let balloonsHtml = '';
-    for (let i = 1; i <= balloonCount; i++) {
-        balloonsHtml += getBalloonSvg(i);
+    if (similarity > 0.8) {
+        progressBar.style.backgroundColor = 'var(--accent-green)';
+        showFeedback(true, null); // Play clap sound
+    } else if (similarity > 0.5) {
+        progressBar.style.backgroundColor = 'var(--accent-yellow)';
+        showFeedback(false, null); // Play buzzer sound
+    } else {
+        progressBar.style.backgroundColor = 'var(--accent-red)';
+        showFeedback(false, null); // Play buzzer sound
     }
-    container.innerHTML = balloonsHtml;
 }
 
 function processSpeakResult(transcript) {
@@ -425,12 +407,16 @@ function processSpeakResult(transcript) {
     const similarity = 1 - distance / Math.max(transcript.length, expected.length);
     const feedbackEl = document.getElementById('speech-feedback');
 
-    updateBalloonGraphic(similarity);
+    updateSpeakProgress(similarity);
 
     if (similarity > 0.8) {
         feedbackEl.textContent = 'Perfect!';
         feedbackEl.style.color = 'var(--accent-green)';
-        setTimeout(loadSpeakSection, 2500);
+        setTimeout(() => {
+            loadSpeakSection();
+            document.getElementById('speak-progress').style.width = '0%';
+            feedbackEl.textContent = '';
+        }, 2500);
     } else if (similarity > 0.5) {
         feedbackEl.textContent = 'So close! Try again.';
         feedbackEl.style.color = 'var(--accent-yellow)';
@@ -497,11 +483,13 @@ function startQuiz() {
 function checkAnswer(selectedId) {
     const feedbackEl = document.getElementById('quiz-feedback');
     if (selectedId === currentQuizWord.id) {
-        feedbackEl.innerHTML = `<div class="text-green-500 text-6xl">✔️</div><p class="text-green-500 font-bold">Correct!</p>`;
+        feedbackEl.innerHTML = `<div class="text-6xl">🎉</div><p class="font-bold" style="color: var(--accent-green);">Correct!</p>`;
+        showFeedback(true, null);
         updateStarCount();
         setTimeout(startQuiz, 1500);
     } else {
-        feedbackEl.innerHTML = `<div class="text-red-500 text-6xl">❌</div><p class="text-red-500 font-bold">Try again!</p>`;
+        feedbackEl.innerHTML = `<div class="text-6xl">🤔</div><p class="font-bold" style="color: var(--accent-red);">Try again!</p>`;
+        showFeedback(false, null);
     }
 }
 
@@ -519,7 +507,7 @@ function loadPackGame() {
     const shuffledItems = allItems.sort(() => 0.5 - Math.random());
 
     const conveyorContent = shuffledItems.map(item => `
-        <div class="inline-block p-2 m-2 bg-white rounded-lg shadow-md draggable text-4xl" data-item="${item}">
+        <div class="inline-block p-2 m-2 bg-white rounded-lg shadow-md draggable text-6xl" data-item="${item}">
             ${item}
         </div>
     `).join('');
@@ -528,6 +516,12 @@ function loadPackGame() {
 
     addItemClickListener();
     playNextPackCommand();
+
+    document.getElementById('repeat-pack-instruction').addEventListener('click', () => {
+        if (itemsToPack.length > 0) {
+            playSound(itemsToPack[0].text);
+        }
+    });
 
     document.getElementById('prev-pack-level-btn').addEventListener('click', () => {
         if (currentPackLevel > 0) {
@@ -555,6 +549,7 @@ function showRewardAnimation() {
     `;
     rewardContainer.classList.remove('hidden');
     rewardContainer.classList.add('flex');
+    localStorage.setItem('packScore', 0);
 }
 
 function hideRewardAnimation() {
