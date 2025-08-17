@@ -622,7 +622,6 @@ function addItemClickListener() {
 
 // --- Settings Logic ---
 function populateVoiceSelectors() {
-    availableVoices = window.speechSynthesis.getVoices();
     const englishSelect = document.getElementById('english-voice-select');
     const hindiSelect = document.getElementById('hindi-voice-select');
 
@@ -649,6 +648,18 @@ function populateVoiceSelectors() {
 
     englishSelect.onchange = (e) => localStorage.setItem('englishVoiceURI', e.target.value);
     hindiSelect.onchange = (e) => localStorage.setItem('hindiVoiceURI', e.target.value);
+}
+
+function loadVoices() {
+    availableVoices = window.speechSynthesis.getVoices();
+    if (availableVoices.length > 0) {
+        populateVoiceSelectors();
+    } else {
+        window.speechSynthesis.onvoiceschanged = () => {
+            availableVoices = window.speechSynthesis.getVoices();
+            populateVoiceSelectors();
+        };
+    }
 }
 
 async function loadContentAndInitialize() {
@@ -696,10 +707,7 @@ function initializeApp() {
     }
 
     populateSidePanel();
-    populateVoiceSelectors();
-    if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
-        speechSynthesis.onvoiceschanged = populateVoiceSelectors;
-    }
+    loadVoices();
     currentLessonIndex = Math.floor(Math.random() * lessons.length);
     setLanguageMode('hindi'); // Set initial mode
     showSection('lessons');
