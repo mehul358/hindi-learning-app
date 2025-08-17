@@ -15,6 +15,13 @@ let itemsToPack = [];
 let packedItems = [];
 let packScore = 0;
 
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
 // --- Levenshtein Distance ---
 function levenshtein(s1, s2) {
     if (s1.length < s2.length) {
@@ -501,6 +508,11 @@ function loadPackGame() {
     document.getElementById('pack-score').textContent = packScore;
 
     const conveyorBelt = document.getElementById('conveyor-belt');
+    const meloTripImage = document.getElementById('melo-trip-image');
+    if (meloTripImage) {
+        const theme = levelData.theme.toLowerCase().replace(' ', '-');
+        meloTripImage.src = `melo-${theme}.png`;
+    }
 
     const correctItems = levelData.commands.map(c => c.item);
     const allItems = [...correctItems, ...levelData.distractor_items];
@@ -656,6 +668,8 @@ async function loadContentAndInitialize() {
         lessons = lessonsData.lessons;
         stories = lessonsData.stories;
         packGameData = packGameDataResponse;
+
+        lessons.forEach(lesson => shuffleArray(lesson.sentences));
         allSentences = lessons.flatMap(lesson => lesson.sentences.map(sentence => ({...sentence, sound: sentence.hindi})));
 
         packScore = parseInt(localStorage.getItem('packScore')) || 0;
@@ -686,6 +700,7 @@ function initializeApp() {
     if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
         speechSynthesis.onvoiceschanged = populateVoiceSelectors;
     }
+    currentLessonIndex = Math.floor(Math.random() * lessons.length);
     setLanguageMode('hindi'); // Set initial mode
     showSection('lessons');
 
