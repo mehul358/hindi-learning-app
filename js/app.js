@@ -14,7 +14,6 @@ let currentPackLevel = 0;
 let itemsToPack = [];
 let packedItems = [];
 let packScore = 0;
-let packTimerInterval;
 
 // --- Levenshtein Distance ---
 function levenshtein(s1, s2) {
@@ -382,63 +381,62 @@ function loadSpeakSection() {
     `;
     document.getElementById('speech-feedback').textContent = '';
     document.getElementById('record-btn').onclick = () => { recognitionMode = 'speak'; if (!isRecognizing) recognition.start(); };
+    document.getElementById('prev-speak-btn').addEventListener('click', loadSpeakSection);
+    document.getElementById('next-speak-btn').addEventListener('click', loadSpeakSection);
 }
+function getBalloonSvg(level) {
+    const colors = ['#F2A7D0', '#F2C53D', '#36D9D9', '#26A3BF', '#34D399'];
+    const color = colors[level - 1];
+    switch (level) {
+        case 1: // Deflated
+            return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M 50 90 C 30 90, 20 70, 50 50 C 80 70, 70 90, 50 90 Z" fill="${color}"/><path d="M 50 90 L 50 100" stroke="#333" stroke-width="2"/></svg>`;
+        case 2: // Slightly inflated
+            return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="50" cy="70" rx="20" ry="25" fill="${color}"/><path d="M 50 95 L 50 100" stroke="#333" stroke-width="2"/></svg>`;
+        case 3: // Inflated
+            return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="50" cy="60" rx="30" ry="35" fill="${color}"/><path d="M 50 95 L 50 100" stroke="#333" stroke-width="2"/></svg>`;
+        case 4: // Very inflated
+            return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="${color}"/><path d="M 50 90 L 50 100" stroke="#333" stroke-width="2"/></svg>`;
+        case 5: // Burst
+            return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="45" fill="${color}"/><path d="M 40 40 L 60 60 M 60 40 L 40 60" stroke="#fff" stroke-width="4" /><path d="M 30 50 L 70 50" stroke="#fff" stroke-width="4" /><path d="M 50 30 L 50 70" stroke="#fff" stroke-width="4" /></svg>`;
+        default:
+            return '';
+    }
+}
+
 function updateBalloonGraphic(similarity) {
     const container = document.getElementById('balloon-container');
-    let svg = '';
-    if (similarity > 0.8) {
-        // Burst balloon
-        svg = `
-            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="50" cy="50" r="40" fill="#F2C53D"/>
-                <path d="M 40 40 L 60 60 M 60 40 L 40 60" stroke="#fff" stroke-width="4" />
-                <path d="M 30 50 L 70 50" stroke="#fff" stroke-width="4" />
-                <path d="M 50 30 L 50 70" stroke="#fff" stroke-width="4" />
-            </svg>
-        `;
-    } else if (similarity > 0.5) {
-        // Very inflated balloon
-        svg = `
-            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="50" cy="50" r="45" fill="#36D9D9"/>
-                <path d="M 50 95 L 50 100" stroke="#333" stroke-width="2"/>
-            </svg>
-        `;
-    } else if (similarity > 0.2) {
-        // Inflated balloon
-        svg = `
-            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <ellipse cx="50" cy="55" rx="30" ry="40" fill="#26A3BF"/>
-                <path d="M 50 95 L 50 100" stroke="#333" stroke-width="2"/>
-            </svg>
-        `;
-    } else {
-        // Deflated balloon
-        svg = `
-            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <path d="M 50 90 C 30 90, 20 70, 50 50 C 80 70, 70 90, 50 90 Z" fill="#F2A7D0"/>
-                 <path d="M 50 90 L 50 100" stroke="#333" stroke-width="2"/>
-            </svg>
-        `;
+    let balloonCount = 0;
+    if (similarity > 0.9) balloonCount = 5;
+    else if (similarity > 0.7) balloonCount = 4;
+    else if (similarity > 0.5) balloonCount = 3;
+    else if (similarity > 0.3) balloonCount = 2;
+    else if (similarity > 0.1) balloonCount = 1;
+
+    let balloonsHtml = '';
+    for (let i = 1; i <= balloonCount; i++) {
+        balloonsHtml += getBalloonSvg(i);
     }
-    container.innerHTML = svg;
+    container.innerHTML = balloonsHtml;
 }
 
 function processSpeakResult(transcript) {
     const expected = currentSpeakSentence.hindi.toLowerCase();
     const distance = levenshtein(transcript, expected);
     const similarity = 1 - distance / Math.max(transcript.length, expected.length);
+    const feedbackEl = document.getElementById('speech-feedback');
 
-    document.getElementById('speech-feedback').textContent = `You said: "${transcript}"`;
     updateBalloonGraphic(similarity);
 
     if (similarity > 0.8) {
-        showFeedback(true, 'Perfect!');
+        feedbackEl.textContent = 'Perfect!';
+        feedbackEl.style.color = 'var(--accent-green)';
         setTimeout(loadSpeakSection, 2500);
     } else if (similarity > 0.5) {
-        showFeedback(false, 'So close! Try again.');
+        feedbackEl.textContent = 'So close! Try again.';
+        feedbackEl.style.color = 'var(--accent-yellow)';
     } else {
-        showFeedback(false, 'Give it another try!');
+        feedbackEl.textContent = 'Give it another try!';
+        feedbackEl.style.color = 'var(--accent-red)';
     }
 }
 
@@ -508,34 +506,12 @@ function checkAnswer(selectedId) {
 }
 
 // --- Pack Game Logic ---
-function startPackTimer() {
-    let timeLeft = 60;
-    const timerElement = document.getElementById('pack-timer');
-    timerElement.textContent = timeLeft;
-
-    packTimerInterval = setInterval(() => {
-        timeLeft--;
-        timerElement.textContent = timeLeft;
-        if (timeLeft <= 0) {
-            clearInterval(packTimerInterval);
-            showFeedback(false, "Time's up! Let's try the next trip.");
-            currentPackLevel++;
-            if (currentPackLevel >= packGameData.levels.length) {
-                currentPackLevel = 0;
-            }
-            setTimeout(loadPackGame, 2000);
-        }
-    }, 1000);
-}
-
 function loadPackGame() {
-    clearInterval(packTimerInterval);
     const levelData = packGameData.levels[currentPackLevel];
     itemsToPack = [...levelData.commands];
     packedItems = [];
     document.getElementById('pack-score').textContent = packScore;
 
-    const destination = document.getElementById('destination');
     const suitcase = document.getElementById('suitcase');
     const conveyorBelt = document.getElementById('conveyor-belt');
 
@@ -545,7 +521,6 @@ function loadPackGame() {
         conveyorBelt.classList.remove('fast');
     }
 
-    destination.innerHTML = `<div class="text-6xl">${levelData.destination_emoji}</div>`;
     suitcase.innerHTML = `<div class="text-9xl">${levelData.suitcase_emoji}</div>`;
 
     const currentCorrectItem = itemsToPack[0].item;
@@ -558,7 +533,19 @@ function loadPackGame() {
 
     addItemClickListener();
     playNextPackCommand();
-    startPackTimer();
+
+    document.getElementById('prev-pack-level-btn').addEventListener('click', () => {
+        if (currentPackLevel > 0) {
+            currentPackLevel--;
+            loadPackGame();
+        }
+    });
+    document.getElementById('next-pack-level-btn').addEventListener('click', () => {
+        if (currentPackLevel < packGameData.levels.length - 1) {
+            currentPackLevel++;
+            loadPackGame();
+        }
+    });
 }
 
 function showRewardAnimation() {
@@ -588,7 +575,6 @@ function playNextPackCommand() {
         playSound(command.text);
     } else {
         // Level complete
-        clearInterval(packTimerInterval);
         currentPackLevel++;
         if (currentPackLevel >= packGameData.levels.length) {
             showRewardAnimation();
@@ -610,6 +596,7 @@ function addItemClickListener() {
             if (item === itemsToPack[0].item) {
                 // Correct item
                 packScore += 10;
+            localStorage.setItem('packScore', packScore);
                 document.getElementById('pack-score').textContent = packScore;
                 itemElement.classList.add('glow');
                 setTimeout(() => {
@@ -637,6 +624,11 @@ function populateVoiceSelectors() {
     const englishSelect = document.getElementById('english-voice-select');
     const hindiSelect = document.getElementById('hindi-voice-select');
 
+    if (!englishSelect || !hindiSelect) return;
+
+    const savedEnglishVoice = localStorage.getItem('englishVoiceURI');
+    const savedHindiVoice = localStorage.getItem('hindiVoiceURI');
+
     englishSelect.innerHTML = '';
     hindiSelect.innerHTML = '';
 
@@ -645,17 +637,13 @@ function populateVoiceSelectors() {
         option.textContent = `${voice.name} (${voice.lang})`;
         option.value = voice.voiceURI;
         if (voice.lang.startsWith('en-')) {
+            if (voice.voiceURI === savedEnglishVoice) option.selected = true;
             englishSelect.appendChild(option);
         } else if (voice.lang.startsWith('hi-')) {
+            if (voice.voiceURI === savedHindiVoice) option.selected = true;
             hindiSelect.appendChild(option);
         }
     });
-
-    const savedEnglishVoice = localStorage.getItem('englishVoiceURI');
-    if (savedEnglishVoice) englishSelect.value = savedEnglishVoice;
-
-    const savedHindiVoice = localStorage.getItem('hindiVoiceURI');
-    if (savedHindiVoice) hindiSelect.value = savedHindiVoice;
 
     englishSelect.onchange = (e) => localStorage.setItem('englishVoiceURI', e.target.value);
     hindiSelect.onchange = (e) => localStorage.setItem('hindiVoiceURI', e.target.value);
@@ -680,6 +668,8 @@ async function loadContentAndInitialize() {
         packGameData = packGameDataResponse;
         allSentences = lessons.flatMap(lesson => lesson.sentences.map(sentence => ({...sentence, sound: sentence.hindi})));
 
+        packScore = parseInt(localStorage.getItem('packScore')) || 0;
+
         initializeApp();
 
     } catch (error) {
@@ -701,11 +691,11 @@ function initializeApp() {
         if(speakButton) speakButton.style.display = 'none';
     }
 
+    populateSidePanel();
+    populateVoiceSelectors();
     if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
         speechSynthesis.onvoiceschanged = populateVoiceSelectors;
     }
-
-    populateSidePanel();
     setLanguageMode('hindi'); // Set initial mode
     showSection('lessons');
 
@@ -739,7 +729,7 @@ function initializeApp() {
             splashVideo.pause();
             splashScreen.classList.add('fade-out');
             main.classList.remove('opacity-0');
-            document.getElementById('menu-btn').disabled = false;
+            document.getElementById('menu-btn').style.display = 'block';
 
             setTimeout(() => {
                 splashScreen.style.display = 'none';
