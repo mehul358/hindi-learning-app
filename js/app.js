@@ -14,7 +14,6 @@ let currentPackLevel = 0;
 let itemsToPack = [];
 let packedItems = [];
 let packScore = 0;
-let packAnimationId = null; // To control the conveyor animation
 
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -128,10 +127,14 @@ async function loadComponent(sectionId) {
 
 async function showSection(sectionId) {
     stopAllAudio();
-    if (packAnimationId) {
-        cancelAnimationFrame(packAnimationId);
-        packAnimationId = null;
+    const conveyorBelt = document.getElementById('conveyor-belt');
+    if (conveyorBelt) {
+        // This pauses the CSS animation when we navigate away from the game
+        conveyorBelt.style.animationPlayState = 'paused';
     }
+    // --- END REPLACEMENT ---
+
+    await loadComponent(sectionId);
     await loadComponent(sectionId);
 
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
@@ -509,28 +512,6 @@ function checkAnswer(selectedId) {
     }
 }
 
-// --- Pack Game Logic ---
-function startConveyorAnimation(belt, loopWidth) {
-    let position = 0;
-    // Increased speed from 0.5 to 1.5 for a faster scroll
-    const speed = 1.5; 
-
-    function animate() {
-        position -= speed;
-        belt.style.transform = `translateX(${position}px)`;
-
-        // If the first set of items has completely scrolled out of view,
-        // reset the position to the beginning. Since the second half is an
-        // exact copy of the first, this reset is seamless.
-        if (position <= -loopWidth) {
-            position = 0;
-        }
-
-        packAnimationId = requestAnimationFrame(animate);
-    }
-
-    animate();
-}
 
 function loadPackGame() {
     if (packAnimationId) {
@@ -560,20 +541,26 @@ function loadPackGame() {
         `<div class="inline-block p-2 m-2 bg-white rounded-lg shadow-md draggable text-6xl" data-item="${item}">${item}</div>`
     ).join('');
 
-    // 1. Set the content once to measure its natural width.
+    // 1. Set the content once to measure its width.
     conveyorBelt.innerHTML = conveyorContent;
     const originalContentWidth = conveyorBelt.scrollWidth;
 
-    // 2. Duplicate the content to create the seamless looping effect.
+    // 2. Duplicate the content for the seamless CSS animation loop.
     conveyorBelt.innerHTML += conveyorContent;
 
-    // 3. Add click listeners and start the game logic.
+    // 3. Calculate a dynamic animation duration based on the content width.
+    //    This ensures the scroll speed is always consistent.
+    const PIXELS_PER_SECOND = 100; // Adjust this value to make it faster or slower!
+    const animationDuration = originalContentWidth / PIXELS_PER_SECOND;
+    
+    // 4. Apply the calculated duration and ensure the animation is running.
+    conveyorBelt.style.animationDuration = `${animationDuration}s`;
+    conveyorBelt.style.animationPlayState = 'running';
+
+    // 5. Start the game.
     addItemClickListener();
     playNextPackCommand();
     
-    // 4. Start the animation, passing the width of the original content block.
-    startConveyorAnimation(conveyorBelt, originalContentWidth);
-
     document.getElementById('repeat-pack-instruction').addEventListener('click', () => {
         if (itemsToPack.length > 0) playSound(itemsToPack[0].text);
     });
