@@ -14,6 +14,7 @@ let currentPackLevel = 0;
 let itemsToPack = [];
 let packedItems = [];
 let packScore = 0;
+let packAnimationId = null; // To control the conveyor animation
 
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -127,6 +128,10 @@ async function loadComponent(sectionId) {
 
 async function showSection(sectionId) {
     stopAllAudio();
+    if (packAnimationId) {
+        cancelAnimationFrame(packAnimationId);
+        packAnimationId = null;
+    }
     await loadComponent(sectionId);
 
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
@@ -505,14 +510,40 @@ function checkAnswer(selectedId) {
 }
 
 // --- Pack Game Logic ---
+function startConveyorAnimation(belt) {
+    let position = 0;
+    const speed = 0.5; // Controls how many pixels to move per frame
+    const itemWidth = belt.scrollWidth / 2; // Width of the original set of items
+
+    function animate() {
+        position -= speed;
+        belt.style.transform = `translateX(${position}px)`;
+
+        if (position <= -itemWidth) {
+            position += itemWidth;
+        }
+
+        packAnimationId = requestAnimationFrame(animate);
+    }
+
+    animate();
+}
+
 function loadPackGame() {
+    if (packAnimationId) {
+        cancelAnimationFrame(packAnimationId);
+        packAnimationId = null;
+    }
+
     const levelData = packGameData.levels[currentPackLevel];
     itemsToPack = [...levelData.commands];
     packedItems = [];
     document.getElementById('pack-score').textContent = packScore;
 
+    const conveyorContainer = document.getElementById('conveyor-container');
     const conveyorBelt = document.getElementById('conveyor-belt');
     const meloTripImage = document.getElementById('melo-trip-image');
+
     if (meloTripImage) {
         const theme = levelData.theme.toLowerCase().replace(' ', '-');
         meloTripImage.src = `melo-${theme}.png`;
@@ -522,21 +553,31 @@ function loadPackGame() {
     const allItems = [...correctItems, ...levelData.distractor_items];
     const shuffledItems = allItems.sort(() => 0.5 - Math.random());
 
-    const conveyorContent = shuffledItems.map(item => `
-        <div class="inline-block p-2 m-2 bg-white rounded-lg shadow-md draggable text-6xl" data-item="${item}">
-            ${item}
-        </div>
-    `).join('');
+    const conveyorContent = shuffledItems.map(item =>
+        `<div class="inline-block p-2 m-2 bg-white rounded-lg shadow-md draggable text-6xl" data-item="${item}">${item}</div>`
+    ).join('');
 
-    conveyorBelt.innerHTML = conveyorContent + conveyorContent; // Duplicate for seamless loop
+    conveyorBelt.innerHTML = conveyorContent;
+
+    // Ensure the belt is wide enough for a seamless loop
+    const containerWidth = conveyorContainer.offsetWidth;
+    let beltWidth = conveyorBelt.scrollWidth;
+    let contentHTML = conveyorBelt.innerHTML;
+
+    while (beltWidth < containerWidth * 2) {
+        contentHTML += conveyorContent;
+        beltWidth *= 2; // Approximation, will be recalculated
+    }
+    conveyorBelt.innerHTML = contentHTML;
+
 
     addItemClickListener();
     playNextPackCommand();
+    startConveyorAnimation(conveyorBelt);
+
 
     document.getElementById('repeat-pack-instruction').addEventListener('click', () => {
-        if (itemsToPack.length > 0) {
-            playSound(itemsToPack[0].text);
-        }
+        if (itemsToPack.length > 0) playSound(itemsToPack[0].text);
     });
 
     document.getElementById('prev-pack-level-btn').addEventListener('click', () => {
@@ -545,6 +586,7 @@ function loadPackGame() {
             loadPackGame();
         }
     });
+
     document.getElementById('next-pack-level-btn').addEventListener('click', () => {
         if (currentPackLevel < packGameData.levels.length - 1) {
             currentPackLevel++;
@@ -552,6 +594,7 @@ function loadPackGame() {
         }
     });
 }
+
 
 function showRewardAnimation() {
     const rewardContainer = document.getElementById('reward-animation');
@@ -599,21 +642,22 @@ function addItemClickListener() {
     items.forEach(itemElement => {
         itemElement.addEventListener('click', () => {
             const item = itemElement.dataset.item;
-            if (item === itemsToPack[0].item) {
+            if (itemsToPack.length > 0 && item === itemsToPack[0].item) {
                 // Correct item
                 packScore += 10;
-            localStorage.setItem('packScore', packScore);
+                localStorage.setItem('packScore', packScore);
                 document.getElementById('pack-score').textContent = packScore;
                 itemElement.classList.add('glow');
                 setTimeout(() => {
                     itemElement.classList.add('swoosh');
                     setTimeout(() => {
-                        itemElement.classList.add('hidden');
+                        // Instead of hiding, we can remove the element or mark it as packed
+                        itemElement.style.visibility = 'hidden';
                     }, 500);
                 }, 1000);
                 packedItems.push(itemsToPack.shift());
                 setTimeout(playNextPackCommand, 1500);
-            } else {
+            } else if (itemsToPack.length > 0) {
                 // Incorrect item
                 itemElement.classList.add('shake');
                 setTimeout(() => itemElement.classList.remove('shake'), 500);
