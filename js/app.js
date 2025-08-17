@@ -510,17 +510,20 @@ function checkAnswer(selectedId) {
 }
 
 // --- Pack Game Logic ---
-function startConveyorAnimation(belt) {
+function startConveyorAnimation(belt, loopWidth) {
     let position = 0;
-    const speed = 0.5; // Controls how many pixels to move per frame
-    const itemWidth = belt.scrollWidth / 2; // Width of the original set of items
+    // Increased speed from 0.5 to 1.5 for a faster scroll
+    const speed = 1.5; 
 
     function animate() {
         position -= speed;
         belt.style.transform = `translateX(${position}px)`;
 
-        if (position <= -itemWidth) {
-            position += itemWidth;
+        // If the first set of items has completely scrolled out of view,
+        // reset the position to the beginning. Since the second half is an
+        // exact copy of the first, this reset is seamless.
+        if (position <= -loopWidth) {
+            position = 0;
         }
 
         packAnimationId = requestAnimationFrame(animate);
@@ -557,24 +560,19 @@ function loadPackGame() {
         `<div class="inline-block p-2 m-2 bg-white rounded-lg shadow-md draggable text-6xl" data-item="${item}">${item}</div>`
     ).join('');
 
+    // 1. Set the content once to measure its natural width.
     conveyorBelt.innerHTML = conveyorContent;
+    const originalContentWidth = conveyorBelt.scrollWidth;
 
-    // Ensure the belt is wide enough for a seamless loop
-    const containerWidth = conveyorContainer.offsetWidth;
-    let beltWidth = conveyorBelt.scrollWidth;
-    let contentHTML = conveyorBelt.innerHTML;
+    // 2. Duplicate the content to create the seamless looping effect.
+    conveyorBelt.innerHTML += conveyorContent;
 
-    while (beltWidth < containerWidth * 2) {
-        contentHTML += conveyorContent;
-        beltWidth *= 2; // Approximation, will be recalculated
-    }
-    conveyorBelt.innerHTML = contentHTML;
-
-
+    // 3. Add click listeners and start the game logic.
     addItemClickListener();
     playNextPackCommand();
-    startConveyorAnimation(conveyorBelt);
-
+    
+    // 4. Start the animation, passing the width of the original content block.
+    startConveyorAnimation(conveyorBelt, originalContentWidth);
 
     document.getElementById('repeat-pack-instruction').addEventListener('click', () => {
         if (itemsToPack.length > 0) playSound(itemsToPack[0].text);
