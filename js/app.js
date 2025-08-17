@@ -622,33 +622,66 @@ function addItemClickListener() {
 
 // --- Settings Logic ---
 function populateVoiceSelectors() {
-    availableVoices = window.speechSynthesis.getVoices();
-    const englishSelect = document.getElementById('english-voice-select');
-    const hindiSelect = document.getElementById('hindi-voice-select');
+    console.log("Attempting to populate voice selectors...");
+    try {
+        let voices = window.speechSynthesis.getVoices();
+        console.log(`Found ${voices.length} voices initially.`);
 
-    if (!englishSelect || !hindiSelect) return;
+        if (voices.length === 0) {
+            console.log("No voices found initially, will try to trigger loading.");
+            let utterance = new SpeechSynthesisUtterance("");
+            window.speechSynthesis.speak(utterance);
+            window.speechSynthesis.cancel();
 
-    const savedEnglishVoice = localStorage.getItem('englishVoiceURI');
-    const savedHindiVoice = localStorage.getItem('hindiVoiceURI');
-
-    englishSelect.innerHTML = '';
-    hindiSelect.innerHTML = '';
-
-    availableVoices.forEach(voice => {
-        const option = document.createElement('option');
-        option.textContent = `${voice.name} (${voice.lang})`;
-        option.value = voice.voiceURI;
-        if (voice.lang.startsWith('en-')) {
-            if (voice.voiceURI === savedEnglishVoice) option.selected = true;
-            englishSelect.appendChild(option);
-        } else if (voice.lang.startsWith('hi-')) {
-            if (voice.voiceURI === savedHindiVoice) option.selected = true;
-            hindiSelect.appendChild(option);
+            // Re-check after the trick
+            voices = window.speechSynthesis.getVoices();
+            console.log(`Found ${voices.length} voices after trigger.`);
         }
-    });
 
-    englishSelect.onchange = (e) => localStorage.setItem('englishVoiceURI', e.target.value);
-    hindiSelect.onchange = (e) => localStorage.setItem('hindiVoiceURI', e.target.value);
+        availableVoices = voices;
+        const englishSelect = document.getElementById('english-voice-select');
+        const hindiSelect = document.getElementById('hindi-voice-select');
+
+        if (!englishSelect || !hindiSelect) {
+            console.error("Voice select elements not found in the DOM.");
+            return;
+        }
+
+        englishSelect.innerHTML = '';
+        hindiSelect.innerHTML = '';
+
+        if (availableVoices.length > 0) {
+            console.log("Populating dropdowns with available voices.");
+            availableVoices.forEach(voice => {
+                const option = document.createElement('option');
+                option.textContent = `${voice.name} (${voice.lang})`;
+                option.value = voice.voiceURI;
+                if (voice.lang.startsWith('en-')) {
+                    englishSelect.appendChild(option);
+                } else if (voice.lang.startsWith('hi-')) {
+                    hindiSelect.appendChild(option);
+                }
+            });
+
+            const savedEnglishVoice = localStorage.getItem('englishVoiceURI');
+            const savedHindiVoice = localStorage.getItem('hindiVoiceURI');
+
+            if (savedEnglishVoice) {
+                englishSelect.value = savedEnglishVoice;
+            }
+            if (savedHindiVoice) {
+                hindiSelect.value = savedHindiVoice;
+            }
+        } else {
+            console.warn("No voices available to populate selectors.");
+        }
+
+        englishSelect.onchange = (e) => localStorage.setItem('englishVoiceURI', e.target.value);
+        hindiSelect.onchange = (e) => localStorage.setItem('hindiVoiceURI', e.target.value);
+
+    } catch (error) {
+        console.error("An error occurred in populateVoiceSelectors:", error);
+    }
 }
 
 async function loadContentAndInitialize() {
