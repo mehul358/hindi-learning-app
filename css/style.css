@@ -284,11 +284,7 @@ main {
     border: 4px dashed var(--primary-light);
 }
 #conveyor-belt {
-    animation: conveyor 20s linear infinite;
-}
-@keyframes conveyor {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
+    /* Animation is now handled by JavaScript */
 }
 .shake {
     animation: shake 0.5s;
