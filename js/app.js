@@ -619,7 +619,6 @@ function addItemClickListener() {
     });
 }
 
-
 // --- Settings Logic ---
 function populateVoiceSelectors() {
     console.log("Attempting to populate voice selectors...");
