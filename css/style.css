@@ -337,3 +337,37 @@ main {
     50% { transform: rotate(20deg); }
     100% { transform: rotate(0deg); }
 }
+
+/* --- ✨ ADD THIS NEW CODE TO style.css --- */
+
+/* This container crops the view, hiding the items that are off-screen */
+#conveyor-container {
+    overflow: hidden;
+    width: 100%;
+}
+
+#conveyor-belt {
+    display: flex; /* Arranges items in a single row */
+    flex-wrap: nowrap; /* Prevents items from wrapping to a new line, solving truncation */
+    width: fit-content; /* Makes the belt exactly as wide as its content */
+
+    /* These properties link the element to our CSS animation */
+    animation-name: scroll;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+
+/* This defines the animation itself */
+@keyframes scroll {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        /* Moves the belt left by exactly 50% of its total width.
+          Since we duplicated the content, this means the first set of items
+          has moved completely off-screen, and the second set is perfectly
+          in its place, creating a seamless loop.
+        */
+        transform: translateX(-50%);
+    }
+}
