@@ -683,6 +683,18 @@ function populateVoiceSelectors() {
     }
 }
 
+function loadVoices() {
+    availableVoices = window.speechSynthesis.getVoices();
+    if (availableVoices.length > 0) {
+        populateVoiceSelectors();
+    } else {
+        window.speechSynthesis.onvoiceschanged = () => {
+            availableVoices = window.speechSynthesis.getVoices();
+            populateVoiceSelectors();
+        };
+    }
+}
+
 async function loadContentAndInitialize() {
     try {
         const [lessonsResponse, packGameResponse] = await Promise.all([
@@ -728,10 +740,7 @@ function initializeApp() {
     }
 
     populateSidePanel();
-    populateVoiceSelectors();
-    if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
-        speechSynthesis.onvoiceschanged = populateVoiceSelectors;
-    }
+    loadVoices();
     currentLessonIndex = Math.floor(Math.random() * lessons.length);
     setLanguageMode('hindi'); // Set initial mode
     showSection('lessons');
