@@ -512,24 +512,19 @@ function loadPackGame() {
     packedItems = [];
     document.getElementById('pack-score').textContent = packScore;
 
-    const suitcase = document.getElementById('suitcase');
     const conveyorBelt = document.getElementById('conveyor-belt');
 
-    if (currentPackLevel === 2) {
-        conveyorBelt.classList.add('fast');
-    } else {
-        conveyorBelt.classList.remove('fast');
-    }
+    const correctItems = levelData.commands.map(c => c.item);
+    const allItems = [...correctItems, ...levelData.distractor_items];
+    const shuffledItems = allItems.sort(() => 0.5 - Math.random());
 
-    suitcase.innerHTML = `<div class="text-9xl">${levelData.suitcase_emoji}</div>`;
-
-    const currentCorrectItem = itemsToPack[0].item;
-    const allItems = [currentCorrectItem, ...levelData.distractor_items];
-    conveyorBelt.innerHTML = allItems.sort(() => 0.5 - Math.random()).map(item => `
+    const conveyorContent = shuffledItems.map(item => `
         <div class="inline-block p-2 m-2 bg-white rounded-lg shadow-md draggable text-4xl" data-item="${item}">
             ${item}
         </div>
     `).join('');
+
+    conveyorBelt.innerHTML = conveyorContent + conveyorContent; // Duplicate for seamless loop
 
     addItemClickListener();
     playNextPackCommand();

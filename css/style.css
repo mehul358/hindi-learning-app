@@ -281,14 +281,11 @@ main {
     border: 4px dashed var(--primary-light);
 }
 #conveyor-belt {
-    animation: conveyor 15s linear infinite;
-}
-#conveyor-belt.fast {
-    animation-duration: 8s;
+    animation: conveyor 30s linear infinite;
 }
 @keyframes conveyor {
-    0% { transform: translateX(100%); }
-    100% { transform: translateX(-100%); }
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
 }
 .shake {
     animation: shake 0.5s;
