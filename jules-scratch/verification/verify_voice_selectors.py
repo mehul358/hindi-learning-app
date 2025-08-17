@@ -6,6 +6,9 @@ def run_verification():
         browser = p.chromium.launch()
         page = browser.new_page()
 
+        # Listen for console events and print them
+        page.on('console', lambda msg: print(f'CONSOLE: {msg.text}'))
+
         # Go to the local server
         page.goto('http://localhost:8000')
 
@@ -22,9 +25,6 @@ def run_verification():
         # Wait for the side panel to be visible
         side_panel = page.locator('#side-panel')
         expect(side_panel).to_be_visible()
-
-        # Wait for voices to load
-        page.wait_for_timeout(5000)
 
         # Wait for the English voice selector to have at least one option
         english_voice_selector = page.locator('#english-voice-select')
