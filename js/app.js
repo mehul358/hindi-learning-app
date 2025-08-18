@@ -543,26 +543,37 @@ function loadPackGame() {
         `<div class="inline-block p-2 m-2 bg-white rounded-lg shadow-md draggable text-6xl" data-item="${item}">${item}</div>`
     ).join('');
 
-    // 1. Set the content once to measure its width.
+    // 1. Set the content on the belt.
     conveyorBelt.innerHTML = conveyorContent;
-    const originalContentWidth = conveyorBelt.scrollWidth;
 
-    // 2. Duplicate the content for the seamless CSS animation loop.
-    conveyorBelt.innerHTML += conveyorContent;
+    // 2. Use requestAnimationFrame to wait for the browser to render the items
+    //    before we measure them and start the animation.
+    requestAnimationFrame(() => {
+        const originalContentWidth = conveyorBelt.scrollWidth;
 
-    // 3. Calculate a dynamic animation duration based on the content width.
-    //    This ensures the scroll speed is always consistent.
-    const PIXELS_PER_SECOND = 100; // Adjust this value to make it faster or slower!
-    const animationDuration = originalContentWidth / PIXELS_PER_SECOND;
-    
-    // 4. Apply the calculated duration and ensure the animation is running.
-    conveyorBelt.style.animationDuration = `${animationDuration}s`;
-    conveyorBelt.style.animationPlayState = 'running';
+        // If for some reason the width is still 0, log an error and stop.
+        if (originalContentWidth === 0) {
+            console.error("Carousel width is 0. Cannot start animation.");
+            return;
+        }
 
-    // 5. Start the game.
-    addItemClickListener();
-    playNextPackCommand();
-    
+        // 3. Duplicate the content for the seamless loop.
+        conveyorBelt.innerHTML += conveyorContent;
+
+        // 4. Calculate animation speed.
+        const PIXELS_PER_SECOND = 100;
+        const animationDuration = originalContentWidth / PIXELS_PER_SECOND;
+        
+        // 5. Apply the duration and start the CSS animation.
+        conveyorBelt.style.animationDuration = `${animationDuration}s`;
+        conveyorBelt.style.animationPlayState = 'running';
+
+        // 6. Add click listeners and play the first command.
+        addItemClickListener();
+        playNextPackCommand();
+    });
+
+    // Event listeners for the level buttons should be outside the animation frame
     document.getElementById('repeat-pack-instruction').addEventListener('click', () => {
         if (itemsToPack.length > 0) playSound(itemsToPack[0].text);
     });
