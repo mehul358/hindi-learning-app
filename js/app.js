@@ -165,7 +165,17 @@ async function showSection(sectionId) {
     }
 }
 
-function updateStarCount() { starCount++; const el = document.getElementById('star-count'); el.innerText = starCount; el.parentElement.style.transform = 'scale(1.1)'; setTimeout(() => el.parentElement.style.transform = 'scale(1)', 200); }
+function updateStarCount() { 
+    const el = document.getElementById('star-count');
+    // ✨ Add a check to ensure the element exists before updating it
+    if (el) {
+        starCount++; 
+        el.innerText = starCount; 
+        el.parentElement.style.transform = 'scale(1.1)'; 
+        setTimeout(() => el.parentElement.style.transform = 'scale(1)', 200); 
+    }
+}
+
 function showFeedback(correct, customText = null) {
     if (customText) {
         const modal = document.getElementById('feedback-modal');
