@@ -28,6 +28,7 @@ body {
     background-color: white;
     box-shadow: 0 10px 40px rgba(0,0,0,0.05);
     overflow: hidden; /* Prevent body scroll */
+    position: relative;
 }
 main {
     flex-grow: 1;
