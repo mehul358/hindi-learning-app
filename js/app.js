@@ -632,25 +632,58 @@ function playNextPackCommand() {
 function addItemClickListener() {
     const items = document.querySelectorAll('.draggable');
     items.forEach(itemElement => {
+        // Prevent adding a listener twice to the same element
+        if (itemElement.dataset.listenerAttached) return;
+        itemElement.dataset.listenerAttached = 'true';
+
         itemElement.addEventListener('click', () => {
-            const item = itemElement.dataset.item;
-            if (itemsToPack.length > 0 && item === itemsToPack[0].item) {
-                // Correct item
+            const itemValue = itemElement.dataset.item;
+
+            // Check if the clicked item is the correct one
+            if (itemsToPack.length > 0 && itemValue === itemsToPack[0].item) {
+                // --- NEW CLONING LOGIC ---
+
+                const appContainer = document.getElementById('app-container');
+                const rect = itemElement.getBoundingClientRect();
+                const appRect = appContainer.getBoundingClientRect();
+
+                // 1. Create a clone of the clicked item
+                const clone = itemElement.cloneNode(true);
+                clone.style.pointerEvents = 'none';
+                clone.style.position = 'absolute';
+                clone.style.left = `${rect.left - appRect.left}px`;
+                clone.style.top = `${rect.top - appRect.top}px`;
+                clone.style.margin = '0';
+                clone.style.zIndex = '100'; // Ensure clone is on top
+
+                // 2. Add the clone to the main app container
+                appContainer.appendChild(clone);
+
+                // 3. Instantly hide all original items on the belt (including duplicates)
+                const allInstances = document.querySelectorAll(`.draggable[data-item="${itemValue}"]`);
+                allInstances.forEach(instance => {
+                    instance.style.visibility = 'hidden';
+                });
+
+                // 4. Animate the clone flying off-screen
+                clone.classList.add('glow');
+                setTimeout(() => {
+                    clone.classList.add('swoosh');
+                    // Remove the clone from the DOM after its animation finishes
+                    clone.addEventListener('animationend', () => clone.remove());
+                }, 1000);
+
+                // --- END CLONING LOGIC ---
+
+                // Game logic continues as normal
                 packScore += 10;
                 localStorage.setItem('packScore', packScore);
                 document.getElementById('pack-score').textContent = packScore;
-                itemElement.classList.add('glow');
-                setTimeout(() => {
-                    itemElement.classList.add('swoosh');
-                    setTimeout(() => {
-                        // Instead of hiding, we can remove the element or mark it as packed
-                        itemElement.style.visibility = 'hidden';
-                    }, 500);
-                }, 1000);
                 packedItems.push(itemsToPack.shift());
                 setTimeout(playNextPackCommand, 1500);
+
             } else if (itemsToPack.length > 0) {
-                // Incorrect item
+                // Incorrect item logic (remains the same)
                 itemElement.classList.add('shake');
                 setTimeout(() => itemElement.classList.remove('shake'), 500);
                 showFeedback(false);
