@@ -525,6 +525,9 @@ function checkAnswer(selectedId) {
 
 
 function loadPackGame() {
+    // Shuffle the levels
+    shuffleArray(packGameData.levels);
+    
     const levelData = packGameData.levels[currentPackLevel];
     itemsToPack = [...levelData.commands];
     packedItems = [];
