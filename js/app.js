@@ -126,6 +126,14 @@ async function loadComponent(sectionId) {
 }
 
 async function showSection(sectionId) {
+    // Immediately close the side panel if it's open
+    const sidePanel = document.getElementById('side-panel');
+    const overlay = document.getElementById('side-panel-overlay');
+    if (sidePanel && !sidePanel.classList.contains('-translate-x-full')) {
+        sidePanel.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+    }
+    
     stopAllAudio();
     const conveyorBelt = document.getElementById('conveyor-belt');
     if (conveyorBelt) {
@@ -156,12 +164,6 @@ async function showSection(sectionId) {
     if(handler[sectionId]) {
         handler[sectionId]();
     }
-
-    // Close side panel after navigation
-    const sidePanel = document.getElementById('side-panel');
-    const overlay = document.getElementById('side-panel-overlay');
-    sidePanel.classList.add('-translate-x-full');
-    overlay.classList.add('hidden');
 }
 
 function updateStarCount() { starCount++; const el = document.getElementById('star-count'); el.innerText = starCount; el.parentElement.style.transform = 'scale(1.1)'; setTimeout(() => el.parentElement.style.transform = 'scale(1)', 200); }
