@@ -350,7 +350,7 @@ main {
     display: flex; /* Arranges items in a single row */
     flex-wrap: nowrap; /* Prevents items from wrapping to a new line, solving truncation */
     width: fit-content; /* Makes the belt exactly as wide as its content */
-
+    will-change: transform;
     /* These properties link the element to our CSS animation */
     animation-name: scroll;
     animation-timing-function: linear;
