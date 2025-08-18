@@ -1,0 +1,32 @@
+{
+    "levels": [
+      {
+        "level": 1,
+        "theme": "Animals",
+        "commands": [
+          {"item": "lnr-paw", "text": "पंजा खोजो"},
+          {"item": "lnr-bug", "text": "कीड़ा खोजो"}
+        ],
+        "distractor_items": ["lnr-home", "lnr-car", "lnr-shirt", "lnr-sun", "lnr-moon", "lnr-cloud", "lnr-train", "lnr-bicycle", "lnr-book", "lnr-camera"]
+      },
+      {
+        "level": 2,
+        "theme": "Food",
+        "commands": [
+          {"item": "lnr-coffee-cup", "text": "कॉफी का कप खोजो"},
+          {"item": "lnr-dinner", "text": "रात्रि का भोजन खोजो"}
+        ],
+        "distractor_items": ["lnr-heart", "lnr-star", "lnr-user", "lnr-flag", "lnr-map", "lnr-rocket", "lnr-gift", "lnr-diamond", "lnr-briefcase", "lnr-bus"]
+      },
+      {
+        "level": 3,
+        "theme": "Objects",
+        "commands": [
+          {"item": "lnr-pencil", "text": "पेंसिल खोजो"},
+          {"item": "lnr-camera", "text": "कैमरा खोजो"},
+          {"item": "lnr-book", "text": "किताब खोजो"}
+        ],
+        "distractor_items": ["lnr-leaf", "lnr-paw", "lnr-smile", "lnr-sad", "lnr-neutral", "lnr-mustache", "lnr-earth", "lnr-select", "lnr-wheelchair", "lnr-train"]
+      }
+    ]
+}
