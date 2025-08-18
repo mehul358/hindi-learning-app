@@ -140,7 +140,6 @@ async function showSection(sectionId) {
         // This pauses the CSS animation when we navigate away from the game
         conveyorBelt.style.animationPlayState = 'paused';
     }
-    // --- END REPLACEMENT ---
 
     await loadComponent(sectionId);
     await loadComponent(sectionId);
@@ -516,11 +515,6 @@ function checkAnswer(selectedId) {
 
 
 function loadPackGame() {
-    if (packAnimationId) {
-        cancelAnimationFrame(packAnimationId);
-        packAnimationId = null;
-    }
-
     const levelData = packGameData.levels[currentPackLevel];
     itemsToPack = [...levelData.commands];
     packedItems = [];
