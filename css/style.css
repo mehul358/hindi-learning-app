@@ -283,9 +283,7 @@ main {
 #suitcase.drag-over {
     border: 4px dashed var(--primary-light);
 }
-#conveyor-belt {
-    /* Animation is now handled by JavaScript */
-}
+
 .shake {
     animation: shake 0.5s;
 }
