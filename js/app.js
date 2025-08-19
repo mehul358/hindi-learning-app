@@ -15,10 +15,86 @@ let itemsToPack = [];
 let packedItems = [];
 let packScore = 0;
 
+let iSpyGameData = {};
+let currentISpyLevel = 0;
+let currentISpyCommand = null;
+let iSpyScore = 0;
+
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+// --- I Spy Game Logic ---
+function loadISpyGame() {
+    if (!iSpyGameData.levels || iSpyGameData.levels.length === 0) {
+        console.error("I Spy game data is not loaded or is empty.");
+        return;
+    }
+
+    if (currentISpyLevel >= iSpyGameData.levels.length) {
+        currentISpyLevel = 0; // Reset for replay
+        showFeedback(true, "You've completed all I Spy levels! Starting over.");
+    }
+
+    const levelData = iSpyGameData.levels[currentISpyLevel];
+    currentISpyCommand = levelData.items[Math.floor(Math.random() * levelData.items.length)];
+
+    const gridContainer = document.getElementById('ispy-grid-container');
+    const scoreEl = document.getElementById('ispy-score');
+
+    if (!gridContainer || !scoreEl) {
+        console.error("I Spy game elements not found in the DOM.");
+        return;
+    }
+
+    scoreEl.textContent = iSpyScore;
+
+    const allItems = [currentISpyCommand, ...levelData.distractors];
+    shuffleArray(allItems);
+
+    gridContainer.innerHTML = '';
+    allItems.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'custom-card p-4 flex items-center justify-center aspect-square cursor-pointer hover:bg-yellow-100 transition-colors';
+
+        const span = document.createElement('span');
+        span.className = 'text-6xl';
+        span.textContent = item.item;
+        span.style.color = item.color;
+
+        card.appendChild(span);
+        card.onclick = () => checkISpyAnswer(item);
+        gridContainer.appendChild(card);
+    });
+
+    document.getElementById('repeat-ispy-instruction').onclick = () => playSound(currentISpyCommand.text);
+    playSound(currentISpyCommand.text);
+}
+
+function checkISpyAnswer(selectedItem) {
+    if (selectedItem.item === currentISpyCommand.item && selectedItem.color === currentISpyCommand.color) {
+        iSpyScore += 10;
+        localStorage.setItem('iSpyScore', iSpyScore);
+        document.getElementById('ispy-score').textContent = iSpyScore;
+
+        showFeedback(true, "शाबाश!");
+
+        currentISpyLevel++;
+        setTimeout(loadISpyGame, 2000);
+    } else {
+        showFeedback(false);
+        // Find the clicked card to shake it
+        const cards = document.querySelectorAll('#ispy-grid-container .custom-card');
+        cards.forEach(card => {
+            const span = card.querySelector('span');
+            if (span && span.textContent === selectedItem.item && span.style.color === selectedItem.color) {
+                card.classList.add('shake');
+                setTimeout(() => card.classList.remove('shake'), 500);
+            }
+        });
     }
 }
 
@@ -158,6 +234,7 @@ async function showSection(sectionId) {
         stories: loadStoriesSection,
         quiz: startQuiz,
         pack: loadPackGame,
+        ispy: loadISpyGame,
     };
 
     if(handler[sectionId]) {
@@ -238,6 +315,10 @@ function populateSidePanel() {
                 <a href="#" onclick="showSection('pack')" class="side-panel-link" data-section="pack">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6h-4V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2z"></path><path d="M8 6v-2h8v2"></path><path d="M12 12v4"></path><path d="M10 14h4"></path></svg>
                     <span>Pack</span>
+                </a>
+                <a href="#" onclick="showSection('ispy')" class="side-panel-link" data-section="ispy">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <span>I Spy</span>
                 </a>
             </div>
 
@@ -770,26 +851,30 @@ function loadVoices() {
 
 async function loadContentAndInitialize() {
     try {
-        const [lessonsResponse, packGameResponse] = await Promise.all([
+        const [lessonsResponse, packGameResponse, iSpyGameResponse] = await Promise.all([
             fetch('content.json'),
-            fetch('pack_game.json')
+            fetch('pack_game.json'),
+            fetch('ispy_game.json')
         ]);
 
-        if (!lessonsResponse.ok || !packGameResponse.ok) {
+        if (!lessonsResponse.ok || !packGameResponse.ok || !iSpyGameResponse.ok) {
             throw new Error(`Network response was not ok`);
         }
 
         const lessonsData = await lessonsResponse.json();
         const packGameDataResponse = await packGameResponse.json();
+        const iSpyGameDataResponse = await iSpyGameResponse.json();
 
         lessons = lessonsData.lessons;
         stories = lessonsData.stories;
         packGameData = packGameDataResponse;
+        iSpyGameData = iSpyGameDataResponse;
 
         lessons.forEach(lesson => shuffleArray(lesson.sentences));
         allSentences = lessons.flatMap(lesson => lesson.sentences.map(sentence => ({...sentence, sound: sentence.hindi})));
 
         packScore = parseInt(localStorage.getItem('packScore')) || 0;
+        iSpyScore = parseInt(localStorage.getItem('iSpyScore')) || 0;
 
         initializeApp();
 
@@ -838,7 +923,15 @@ function initializeApp() {
     const playSplashBtn = document.getElementById('play-splash-btn');
     const main = document.querySelector('main');
 
-    if (splashScreen && splashVideo && skipSplashBtn && playSplashBtn && main) {
+    // Check for query param to disable splash screen
+    const urlParams = new URLSearchParams(window.location.search);
+    const splashDisabled = urlParams.get('splash') === 'false';
+
+    if (splashDisabled) {
+        splashScreen.style.display = 'none';
+        main.classList.remove('opacity-0');
+        document.getElementById('menu-btn').style.display = 'block';
+    } else if (splashScreen && splashVideo && skipSplashBtn && playSplashBtn && main) {
         let splashHidden = false;
 
         function hideSplashScreen() {

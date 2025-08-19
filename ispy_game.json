@@ -1,0 +1,44 @@
+{
+    "levels": [
+      {
+        "level": 1,
+        "theme": "Food",
+        "items": [
+          {"item": "🍎", "color": "red", "text": "एक लाल सेब ढूंढो"},
+          {"item": "🍌", "color": "yellow", "text": "एक पीला केला ढूंढो"},
+          {"item": "🍇", "color": "purple", "text": "बैंगनी अंगूर ढूंढो"}
+        ],
+        "distractors": [
+          {"item": "🚗", "color": "blue"},
+          {"item": "🏠", "color": "brown"},
+          {"item": "👕", "color": "blue"},
+          {"item": "☀️", "color": "yellow"},
+          {"item": "🌙", "color": "gray"},
+          {"item": "☁️", "color": "white"},
+          {"item": "🚂", "color": "black"},
+          {"item": "🚲", "color": "green"},
+          {"item": "📖", "color": "blue"},
+          {"item": "📷", "color": "black"}
+        ]
+      },
+      {
+        "level": 2,
+        "theme": "Animals",
+        "items": [
+          {"item": "🐶", "color": "brown", "text": "एक भूरा कुत्ता ढूंढो"},
+          {"item": "🐱", "color": "orange", "text": "एक नारंगी बिल्ली ढूंढो"},
+          {"item": "🐸", "color": "green", "text": "एक हरा मेंढक ढूंढो"}
+        ],
+        "distractors": [
+            {"item": "🍎", "color": "red"},
+            {"item": "🍌", "color": "yellow"},
+            {"item": "🍇", "color": "purple"},
+            {"item": "🚗", "color": "blue"},
+            {"item": "🏠", "color": "brown"},
+            {"item": "👕", "color": "blue"},
+            {"item": "☀️", "color": "yellow"},
+            {"item": "🌙", "color": "gray"}
+        ]
+      }
+    ]
+}
