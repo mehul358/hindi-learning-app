@@ -34,16 +34,13 @@ function loadISpyGame() {
         return;
     }
 
-    // For simplicity, let's just cycle through levels.
     if (currentISpyLevel >= iSpyGameData.levels.length) {
-        currentISpyLevel = 0; // Reset to the first level if all are completed
+        currentISpyLevel = 0; // Reset for replay
         showFeedback(true, "You've completed all I Spy levels! Starting over.");
     }
 
     const levelData = iSpyGameData.levels[currentISpyLevel];
-
-    // Select a random command from the current level
-    currentISpyCommand = levelData.commands[Math.floor(Math.random() * levelData.commands.length)];
+    currentISpyCommand = levelData.items[Math.floor(Math.random() * levelData.items.length)];
 
     const gridContainer = document.getElementById('ispy-grid-container');
     const scoreEl = document.getElementById('ispy-score');
@@ -55,42 +52,49 @@ function loadISpyGame() {
 
     scoreEl.textContent = iSpyScore;
 
-    const allItems = [currentISpyCommand.item, ...levelData.distractor_items];
+    const allItems = [currentISpyCommand, ...levelData.distractors];
     shuffleArray(allItems);
 
     gridContainer.innerHTML = '';
     allItems.forEach(item => {
         const card = document.createElement('div');
         card.className = 'custom-card p-4 flex items-center justify-center aspect-square cursor-pointer hover:bg-yellow-100 transition-colors';
-        card.innerHTML = `<span class="${item} text-6xl"></span>`;
+
+        const span = document.createElement('span');
+        span.className = 'text-6xl';
+        span.textContent = item.item;
+        span.style.color = item.color;
+
+        card.appendChild(span);
         card.onclick = () => checkISpyAnswer(item);
         gridContainer.appendChild(card);
     });
 
     document.getElementById('repeat-ispy-instruction').onclick = () => playSound(currentISpyCommand.text);
-
-    // Play the instruction sound
     playSound(currentISpyCommand.text);
 }
 
 function checkISpyAnswer(selectedItem) {
-    if (selectedItem === currentISpyCommand.item) {
+    if (selectedItem.item === currentISpyCommand.item && selectedItem.color === currentISpyCommand.color) {
         iSpyScore += 10;
         localStorage.setItem('iSpyScore', iSpyScore);
         document.getElementById('ispy-score').textContent = iSpyScore;
 
         showFeedback(true, "शाबाश!");
 
-        // Move to the next level for simplicity, or you could cycle through commands in a level
         currentISpyLevel++;
-        setTimeout(loadISpyGame, 2000); // Load next round after a delay
+        setTimeout(loadISpyGame, 2000);
     } else {
         showFeedback(false);
-        const incorrectIcon = document.querySelector(`#ispy-grid-container span[class^="${selectedItem}"]`).parentElement;
-        if(incorrectIcon) {
-            incorrectIcon.classList.add('shake');
-            setTimeout(() => incorrectIcon.classList.remove('shake'), 500);
-        }
+        // Find the clicked card to shake it
+        const cards = document.querySelectorAll('#ispy-grid-container .custom-card');
+        cards.forEach(card => {
+            const span = card.querySelector('span');
+            if (span && span.textContent === selectedItem.item && span.style.color === selectedItem.color) {
+                card.classList.add('shake');
+                setTimeout(() => card.classList.remove('shake'), 500);
+            }
+        });
     }
 }
 
@@ -919,7 +923,15 @@ function initializeApp() {
     const playSplashBtn = document.getElementById('play-splash-btn');
     const main = document.querySelector('main');
 
-    if (splashScreen && splashVideo && skipSplashBtn && playSplashBtn && main) {
+    // Check for query param to disable splash screen
+    const urlParams = new URLSearchParams(window.location.search);
+    const splashDisabled = urlParams.get('splash') === 'false';
+
+    if (splashDisabled) {
+        splashScreen.style.display = 'none';
+        main.classList.remove('opacity-0');
+        document.getElementById('menu-btn').style.display = 'block';
+    } else if (splashScreen && splashVideo && skipSplashBtn && playSplashBtn && main) {
         let splashHidden = false;
 
         function hideSplashScreen() {

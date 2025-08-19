@@ -2,31 +2,43 @@
     "levels": [
       {
         "level": 1,
-        "theme": "Animals",
-        "commands": [
-          {"item": "lnr-paw", "text": "पंजा खोजो"},
-          {"item": "lnr-bug", "text": "कीड़ा खोजो"}
+        "theme": "Food",
+        "items": [
+          {"item": "🍎", "color": "red", "text": "एक लाल सेब ढूंढो"},
+          {"item": "🍌", "color": "yellow", "text": "एक पीला केला ढूंढो"},
+          {"item": "🍇", "color": "purple", "text": "बैंगनी अंगूर ढूंढो"}
         ],
-        "distractor_items": ["lnr-home", "lnr-car", "lnr-shirt", "lnr-sun", "lnr-moon", "lnr-cloud", "lnr-train", "lnr-bicycle", "lnr-book", "lnr-camera"]
+        "distractors": [
+          {"item": "🚗", "color": "blue"},
+          {"item": "🏠", "color": "brown"},
+          {"item": "👕", "color": "blue"},
+          {"item": "☀️", "color": "yellow"},
+          {"item": "🌙", "color": "gray"},
+          {"item": "☁️", "color": "white"},
+          {"item": "🚂", "color": "black"},
+          {"item": "🚲", "color": "green"},
+          {"item": "📖", "color": "blue"},
+          {"item": "📷", "color": "black"}
+        ]
       },
       {
         "level": 2,
-        "theme": "Food",
-        "commands": [
-          {"item": "lnr-coffee-cup", "text": "कॉफी का कप खोजो"},
-          {"item": "lnr-dinner", "text": "रात्रि का भोजन खोजो"}
+        "theme": "Animals",
+        "items": [
+          {"item": "🐶", "color": "brown", "text": "एक भूरा कुत्ता ढूंढो"},
+          {"item": "🐱", "color": "orange", "text": "एक नारंगी बिल्ली ढूंढो"},
+          {"item": "🐸", "color": "green", "text": "एक हरा मेंढक ढूंढो"}
         ],
-        "distractor_items": ["lnr-heart", "lnr-star", "lnr-user", "lnr-flag", "lnr-map", "lnr-rocket", "lnr-gift", "lnr-diamond", "lnr-briefcase", "lnr-bus"]
-      },
-      {
-        "level": 3,
-        "theme": "Objects",
-        "commands": [
-          {"item": "lnr-pencil", "text": "पेंसिल खोजो"},
-          {"item": "lnr-camera", "text": "कैमरा खोजो"},
-          {"item": "lnr-book", "text": "किताब खोजो"}
-        ],
-        "distractor_items": ["lnr-leaf", "lnr-paw", "lnr-smile", "lnr-sad", "lnr-neutral", "lnr-mustache", "lnr-earth", "lnr-select", "lnr-wheelchair", "lnr-train"]
+        "distractors": [
+            {"item": "🍎", "color": "red"},
+            {"item": "🍌", "color": "yellow"},
+            {"item": "🍇", "color": "purple"},
+            {"item": "🚗", "color": "blue"},
+            {"item": "🏠", "color": "brown"},
+            {"item": "👕", "color": "blue"},
+            {"item": "☀️", "color": "yellow"},
+            {"item": "🌙", "color": "gray"}
+        ]
       }
     ]
 }
