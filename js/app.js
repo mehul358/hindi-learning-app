@@ -17,6 +17,7 @@ let packScore = 0;
 
 let iSpyGameData = {};
 let currentISpyLevel = 0;
+let iSpyItemsToFind = [];
 let currentISpyCommand = null;
 let iSpyScore = 0;
 
@@ -36,11 +37,13 @@ function loadISpyGame() {
 
     if (currentISpyLevel >= iSpyGameData.levels.length) {
         currentISpyLevel = 0; // Reset for replay
+        iSpyScore = 0; // Reset score
         showFeedback(true, "You've completed all I Spy levels! Starting over.");
     }
 
     const levelData = iSpyGameData.levels[currentISpyLevel];
-    currentISpyCommand = levelData.items[Math.floor(Math.random() * levelData.items.length)];
+    iSpyItemsToFind = [...levelData.items];
+    shuffleArray(iSpyItemsToFind);
 
     const gridContainer = document.getElementById('ispy-grid-container');
     const scoreEl = document.getElementById('ispy-score');
@@ -52,13 +55,13 @@ function loadISpyGame() {
 
     scoreEl.textContent = iSpyScore;
 
-    const allItems = [currentISpyCommand, ...levelData.distractors];
-    shuffleArray(allItems);
-
+    // Display all items for the level in the grid
     gridContainer.innerHTML = '';
-    allItems.forEach(item => {
+    levelData.items.forEach(item => {
         const card = document.createElement('div');
         card.className = 'custom-card p-4 flex items-center justify-center aspect-square cursor-pointer hover:bg-yellow-100 transition-colors';
+        card.dataset.item = item.item;
+        card.dataset.color = item.color;
 
         const span = document.createElement('span');
         span.className = 'text-6xl';
@@ -66,15 +69,32 @@ function loadISpyGame() {
         span.style.color = item.color;
 
         card.appendChild(span);
-        card.onclick = () => checkISpyAnswer(item);
+        card.onclick = () => checkISpyAnswer(item, card);
         gridContainer.appendChild(card);
     });
 
+    askNextISpyQuestion();
+}
+
+function askNextISpyQuestion() {
+    if (iSpyItemsToFind.length === 0) {
+        // Level complete
+        showFeedback(true, "Level Complete!");
+        currentISpyLevel++;
+        setTimeout(loadISpyGame, 2000);
+        return;
+    }
+
+    currentISpyCommand = iSpyItemsToFind[0];
     document.getElementById('repeat-ispy-instruction').onclick = () => playSound(currentISpyCommand.text);
     playSound(currentISpyCommand.text);
 }
 
-function checkISpyAnswer(selectedItem) {
+function checkISpyAnswer(selectedItem, cardElement) {
+    if (cardElement.classList.contains('found')) {
+        return; // Already found
+    }
+
     if (selectedItem.item === currentISpyCommand.item && selectedItem.color === currentISpyCommand.color) {
         iSpyScore += 10;
         localStorage.setItem('iSpyScore', iSpyScore);
@@ -82,19 +102,18 @@ function checkISpyAnswer(selectedItem) {
 
         showFeedback(true, "शाबाश!");
 
-        currentISpyLevel++;
-        setTimeout(loadISpyGame, 2000);
+        cardElement.classList.add('found');
+        cardElement.style.opacity = '0.5';
+        cardElement.style.cursor = 'default';
+
+        // Remove the found item from the list
+        iSpyItemsToFind.shift();
+
+        setTimeout(askNextISpyQuestion, 1500);
     } else {
         showFeedback(false);
-        // Find the clicked card to shake it
-        const cards = document.querySelectorAll('#ispy-grid-container .custom-card');
-        cards.forEach(card => {
-            const span = card.querySelector('span');
-            if (span && span.textContent === selectedItem.item && span.style.color === selectedItem.color) {
-                card.classList.add('shake');
-                setTimeout(() => card.classList.remove('shake'), 500);
-            }
-        });
+        cardElement.classList.add('shake');
+        setTimeout(() => cardElement.classList.remove('shake'), 500);
     }
 }
 
