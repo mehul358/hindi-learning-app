@@ -1,0 +1,22 @@
+:root { 
+    --font-sans: 'Inter', system-ui, sans-serif; 
+    --font-heading: 'Outfit', system-ui, sans-serif; 
+}
+body { font-family: var(--font-sans); }
+h1, h2, h3, h4, .font-outfit { font-family: var(--font-heading); }
+
+.main-content-section { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes slideUp { 
+    from { opacity: 0; transform: translateY(15px); } 
+    to { opacity: 1; transform: translateY(0); } 
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Leaflet Overrides */
+.leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+.leaflet-popup-content { margin: 12px 16px; font-family: var(--font-sans); }

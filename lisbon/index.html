@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en" style="scroll-behavior: smooth;">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portugal Family Trip | March 26 - April 4, 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="antialiased text-slate-900 bg-slate-50">
+    <div id="app" class="relative min-h-screen flex">
+        
+        <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/60 z-40 opacity-0 pointer-events-none transition-opacity duration-300 md:hidden"></div>
+        
+        <aside id="sidebar" class="fixed md:sticky top-0 left-0 h-screen w-72 bg-white border-r border-slate-200 shadow-2xl md:shadow-none z-50 transform -translate-x-full transition-transform duration-300 ease-in-out md:translate-x-0 flex flex-col">
+            <div class="p-6 text-center border-b border-slate-100 flex-shrink-0 relative">
+                <button id="close-sidebar" class="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 md:hidden">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-teal-50 text-teal-600 mb-3">
+                    <i data-lucide="plane" class="w-6 h-6"></i>
+                </div>
+                <h1 class="text-xl font-outfit font-bold tracking-tight text-slate-800">Portugal Anniversary</h1>
+                <p class="text-sm font-medium text-teal-600 mt-1">Family of 4</p>
+                <p class="text-xs text-slate-500 mt-1">Mar 26 - Apr 4, 2026</p>
+                <p id="user-id-display" class="text-[10px] text-slate-400 mt-3 break-all bg-slate-50 p-1.5 rounded border border-slate-100 hidden">Loading...</p>
+            </div>
+            
+            <nav class="flex-1 py-4 overflow-y-auto custom-scrollbar">
+                <div class="px-4 space-y-1 mb-6">
+                    <h2 class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Trip Hub</h2>
+                    <button class="nav-link w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center text-slate-600 hover:bg-teal-50 hover:text-teal-700" data-section="itinerary">
+                        <i data-lucide="calendar" class="w-4 h-4 mr-3 opacity-70"></i> Itinerary
+                    </button>
+                    <button class="nav-link w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center text-slate-600 hover:bg-teal-50 hover:text-teal-700" data-section="map">
+                        <i data-lucide="map" class="w-4 h-4 mr-3 opacity-70"></i> Map View
+                    </button>
+                    <button class="nav-link w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center text-slate-600 hover:bg-teal-50 hover:text-teal-700" data-section="bookings">
+                        <i data-lucide="wallet" class="w-4 h-4 mr-3 opacity-70"></i> Expenses
+                    </button>
+                    <button class="nav-link w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center text-slate-600 hover:bg-teal-50 hover:text-teal-700" data-section="checklists">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 mr-3 opacity-70"></i> Checklists
+                    </button>
+                    <button class="nav-link w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center text-slate-600 hover:bg-teal-50 hover:text-teal-700" data-section="guide">
+                        <i data-lucide="book-heart" class="w-4 h-4 mr-3 opacity-70"></i> Family Guide
+                    </button>
+                </div>
+                
+                <div class="px-4 border-t border-slate-100 pt-4">
+                    <h2 class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center justify-between">
+                        Daily Timeline
+                    </h2>
+                    <div id="timeline-nav-links" class="space-y-1"></div>
+                </div>
+            </nav>
+            
+            <footer class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+                <button id="show-user-id" class="p-2 text-slate-400 hover:text-teal-600 transition-colors" title="Developer Info">
+                    <i data-lucide="info" class="w-4 h-4"></i>
+                </button>
+                <button id="share-trip-btn" class="flex items-center space-x-2 bg-white border border-slate-200 hover:border-teal-300 hover:bg-teal-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm">
+                    <i data-lucide="share-2" class="w-4 h-4 text-teal-600"></i>
+                    <span>Share Trip</span>
+                </button>
+            </footer>
+        </aside>
+        
+        <main class="flex-1 flex flex-col min-w-0 transition-all duration-300 h-screen overflow-hidden">
+            <div class="md:hidden sticky top-0 bg-white/90 backdrop-blur-md z-30 border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <button id="open-sidebar" class="p-2 -ml-2 rounded-lg hover:bg-slate-100 text-slate-700">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <h1 id="mobile-header-title" class="font-outfit font-bold text-slate-800 text-lg truncate">Itinerary</h1>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-xs">A&K</div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 lg:p-10 relative">
+                <div class="max-w-5xl mx-auto">
+                    <section id="itinerary-section" class="main-content-section"></section>
+                    
+                    <section id="map-section" class="main-content-section hidden">
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[70vh] min-h-[500px]">
+                            <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                                <div>
+                                    <h2 class="text-lg font-outfit font-bold text-slate-800">Route Map</h2>
+                                    <p id="map-subtitle" class="text-sm text-slate-500">Locations for Day 1</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                        <i data-lucide="navigation" class="w-3 h-3 mr-1"></i> Interactive
+                                    </span>
+                                </div>
+                            </div>
+                            <div id="leaflet-map" class="flex-1 w-full z-0" style="height: 100%; min-height: 400px;"></div>
+                        </div>
+                    </section>
+                    
+                    <section id="bookings-section" class="main-content-section hidden"></section>
+                    <section id="checklists-section" class="main-content-section hidden"></section>
+                    <section id="guide-section" class="main-content-section hidden"></section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast-checklist" class="fixed bottom-6 right-6 z-50 bg-slate-800 text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-medium opacity-0 pointer-events-none transform translate-y-4 transition-all duration-300 flex items-center space-x-3">
+        <div class="bg-teal-500/20 text-teal-400 p-1 rounded-full">
+            <i data-lucide="check" class="w-4 h-4"></i>
+        </div>
+        <span id="toast-message">Progress saved!</span>
+    </div>
+
+    <div id="share-trip-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 transform scale-95 transition-transform duration-300 relative">
+            <div class="absolute top-0 right-0 p-4">
+                <button id="close-share-modal" class="text-slate-400 hover:text-slate-600 transition-colors p-2 rounded-full hover:bg-slate-100">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="w-12 h-12 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center mb-5">
+                <i data-lucide="users" class="w-6 h-6"></i>
+            </div>
+            
+            <h3 class="text-2xl font-outfit font-bold text-slate-800 mb-2">Collaborate on Plan</h3>
+            <p class="text-sm text-slate-500 mb-6 leading-relaxed">Share this link with your wife. Both of you can view the itinerary, add notes, and tick off the checklists in real-time.</p>
+            
+            <div class="flex space-x-2 mb-8">
+                <input type="text" id="share-trip-link" readonly class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-600 outline-none focus:ring-2 focus:ring-teal-500/20 font-medium font-mono">
+                <button id="copy-share-link" class="bg-teal-600 hover:bg-teal-700 text-white px-5 py-3 rounded-xl font-semibold transition-colors flex items-center shadow-sm">
+                    <i data-lucide="copy" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <div class="pt-6 border-t border-slate-100 flex justify-between items-center">
+                <button id="leave-shared-trip" class="text-red-500 hover:text-red-700 text-sm font-semibold flex items-center transition-colors">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4 mr-1.5"></i> Reset Device
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
