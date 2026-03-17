@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -18,8 +18,10 @@
 <body class="antialiased text-slate-900 bg-slate-50">
     <div id="app" class="relative min-h-screen flex">
         
+        <!-- Mobile Sidebar Overlay -->
         <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/60 z-40 opacity-0 pointer-events-none transition-opacity duration-300 md:hidden"></div>
         
+        <!-- Sidebar -->
         <aside id="sidebar" class="fixed md:sticky top-0 left-0 h-screen w-72 bg-white border-r border-slate-200 shadow-2xl md:shadow-none z-50 transform -translate-x-full transition-transform duration-300 ease-in-out md:translate-x-0 flex flex-col">
             <div class="p-6 text-center border-b border-slate-100 flex-shrink-0 relative">
                 <button id="close-sidebar" class="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 md:hidden">
@@ -28,9 +30,9 @@
                 <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-teal-50 text-teal-600 mb-3">
                     <i data-lucide="plane" class="w-6 h-6"></i>
                 </div>
-                <h1 class="text-xl font-outfit font-bold tracking-tight text-slate-800">Portugal Anniversary</h1>
-                <p class="text-sm font-medium text-teal-600 mt-1">Family of 4</p>
-                <p class="text-xs text-slate-500 mt-1">Mar 26 - Apr 4, 2026</p>
+                <h1 class="text-xl font-outfit font-extrabold tracking-tight text-slate-800">Agarwal Odyssey</h1>
+                <p class="text-sm font-semibold text-teal-600 mt-1">10th Anniversary Trip</p>
+                <p class="text-xs text-slate-500 mt-1 font-medium">Aarit (5) & Keev (3)</p>
                 <p id="user-id-display" class="text-[10px] text-slate-400 mt-3 break-all bg-slate-50 p-1.5 rounded border border-slate-100 hidden">Loading...</p>
             </div>
             
@@ -38,13 +40,13 @@
                 <div class="px-4 space-y-1 mb-6">
                     <h2 class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Trip Hub</h2>
                     <button class="nav-link w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center text-slate-600 hover:bg-teal-50 hover:text-teal-700" data-section="itinerary">
-                        <i data-lucide="calendar" class="w-4 h-4 mr-3 opacity-70"></i> Itinerary
+                        <i data-lucide="calendar" class="w-4 h-4 mr-3 opacity-70"></i> Master Itinerary
                     </button>
                     <button class="nav-link w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center text-slate-600 hover:bg-teal-50 hover:text-teal-700" data-section="map">
                         <i data-lucide="map" class="w-4 h-4 mr-3 opacity-70"></i> Map View
                     </button>
                     <button class="nav-link w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center text-slate-600 hover:bg-teal-50 hover:text-teal-700" data-section="bookings">
-                        <i data-lucide="wallet" class="w-4 h-4 mr-3 opacity-70"></i> Expenses
+                        <i data-lucide="briefcase" class="w-4 h-4 mr-3 opacity-70"></i> Bookings & Budget
                     </button>
                     <button class="nav-link w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center text-slate-600 hover:bg-teal-50 hover:text-teal-700" data-section="checklists">
                         <i data-lucide="check-circle-2" class="w-4 h-4 mr-3 opacity-70"></i> Checklists
@@ -73,7 +75,9 @@
             </footer>
         </aside>
         
+        <!-- Main Content -->
         <main class="flex-1 flex flex-col min-w-0 transition-all duration-300 h-screen overflow-hidden">
+            <!-- Mobile Header -->
             <div class="md:hidden sticky top-0 bg-white/90 backdrop-blur-md z-30 border-b border-slate-200 px-4 py-3 flex items-center justify-between">
                 <div class="flex items-center space-x-3">
                     <button id="open-sidebar" class="p-2 -ml-2 rounded-lg hover:bg-slate-100 text-slate-700">
@@ -84,8 +88,10 @@
                 <div class="w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-xs">A&K</div>
             </div>
 
+            <!-- Scrollable Content Area -->
             <div class="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 lg:p-10 relative">
                 <div class="max-w-5xl mx-auto">
+                    <!-- Dynamic Sections -->
                     <section id="itinerary-section" class="main-content-section"></section>
                     
                     <section id="map-section" class="main-content-section hidden">
@@ -101,7 +107,7 @@
                                     </span>
                                 </div>
                             </div>
-                            <div id="leaflet-map" class="flex-1 w-full z-0" style="height: 100%; min-height: 400px;"></div>
+                            <div id="leaflet-map" class="flex-1 w-full z-0"></div>
                         </div>
                     </section>
                     
@@ -113,6 +119,7 @@
         </main>
     </div>
 
+    <!-- Modals & Toasts -->
     <div id="toast-checklist" class="fixed bottom-6 right-6 z-50 bg-slate-800 text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-medium opacity-0 pointer-events-none transform translate-y-4 transition-all duration-300 flex items-center space-x-3">
         <div class="bg-teal-500/20 text-teal-400 p-1 rounded-full">
             <i data-lucide="check" class="w-4 h-4"></i>

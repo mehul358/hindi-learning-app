@@ -1,141 +1,288 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-// --- Trip Data ---
+// --- Reservation Data Hub ---
+const reservationData = {
+    flights: {
+        airline: "TAP Air Portugal",
+        pnr: "YXWAMH",
+        passengers: [
+            { name: "Mehul Agarwal", ticket: "047 2199825211" },
+            { name: "Nehal Agarwal", ticket: "047 2199825209" },
+            { name: "Aarit Agarwal", ticket: "047 2199825210" },
+            { name: "Keev Agarwal", ticket: "047 2199825208" }
+        ],
+        schedule: [
+            { date: "Thursday, March 26, 2026", flight: "TP204", route: "Newark (EWR) → Lisbon (LIS)", time: "Dep: 12:55 AM | Arr: 11:40 AM", label: "Outbound" },
+            { date: "Saturday, April 4, 2026", flight: "TP1902", route: "Faro (FAO) → Lisbon (LIS)", time: "Dep: 11:15 AM | Arr: 12:10 PM", label: "Inter-Portugal" },
+            { date: "Saturday, April 4, 2026", flight: "TP203", route: "Lisbon (LIS) → Newark (EWR)", time: "Dep: 5:55 PM | Arr: 9:00 PM", label: "Return" }
+        ]
+    },
+    hotels: [
+        {
+            name: "Martinhal Lisbon Chiado Family Suites", location: "Lisbon",
+            dates: "March 26 – March 31, 2026 (5 Nights)",
+            bookingId: "DSR0254B8JUXF (PIN: 190696)",
+            roomType: "1 Bedroom Superior Deluxe Apartment (Breakfast included)",
+            checkIn: "3:00 PM (Requested early check-in at 11:45 AM)", checkOut: "12:00 PM",
+            benefits: "Includes Toddler Crib."
+        },
+        {
+            name: "Vila Vita Parc Resort & Spa", location: "Algarve",
+            dates: "March 31 – April 4, 2026 (4 Nights)",
+            bookingId: "9076038703600",
+            roomType: "Family Suite (Oasis)",
+            checkIn: "3:00 PM (12:00 PM if available)", checkOut: "12:00 PM (Guaranteed 4:00 PM late check-out)",
+            benefits: "Daily breakfast for two, $100 Property credit, Complimentary Wi-Fi, and Room upgrade (if available)."
+        }
+    ],
+    transport: {
+        type: "Rental Car (Rent Car 4 Less via Zest)",
+        pickup: "Tuesday, March 31, 2026 at 10:00 AM (Lisbon)",
+        dropoff: "Saturday, April 4, 2026 at 09:00 AM (Faro Airport - FAO)",
+        plan: "Skoda Kamiq or similar (Automatic). Includes 1 Child Seat, 1 Booster Seat, and Toll Transponder. Ref: BFH972"
+    },
+    bookingLinks: [
+        { day: "Day 1 (Mar 26)", name: "Cervejaria Trindade (Dinner)", method: "Official Website or +351 213 423 506", note: "Excellent for your first night; very close to Martinhal." },
+        { day: "Day 2 (Mar 27)", name: "Ofício (Lunch)", method: "TheFork or +351 910 456 440", note: "Highly popular. Book the 12:30 PM slot if available to stay on schedule for the Science Museum." },
+        { day: "Day 2 (Mar 27)", name: "Pizzaria Lisboa (Dinner)", method: "joseavillez.pt or +351 211 554 945", note: "" },
+        { day: "Day 4 (Mar 29)", name: "A Praça (Lunch at LX Factory)", method: "Official Website or +351 213 621 000", note: "" },
+        { day: "Day 4 (Mar 29)", name: "Pizzeria ZeroZero (Dinner)", method: "Official Website or +351 213 420 066", note: "Request the Garden Terrace in the notes." },
+        { day: "Day 5 (Mar 30)", name: "Tascantiga (Sintra Lunch)", method: "Phone only (+351 219 243 242) or email tascantiga@gmail.com", note: "Very welcoming to children; serves high-quality tapas." },
+        { day: "Day 5 (Mar 30)", name: "Bairro do Avillez - Páteo (Farewell Dinner)", method: "joseavillez.pt or +351 215 830 290", note: "Crucial: Specify 'The Páteo' for the grander, family-friendly hall." },
+        { day: "Day 8 (Apr 2)", name: "A Forja (Lagos Lunch)", method: "Walk-in or +351 282 768 588", note: "Great local spot in Lagos to avoid driving back to Almancil." },
+        { day: "Day 8 (Apr 2)", name: "Praia Dourada (Anniversary Dinner)", method: "SevenRooms or through Vila Vita Concierge", note: "Crucial Note: '10th Anniversary - Request table on the sand edge.'" },
+        { day: "Day 9 (Apr 3)", name: "Austa (Lunch)", method: "Official Website or WhatsApp +351 965 896 278", note: "Children under 7 only permitted for lunch/brunch." }
+    ],
+    activities: [
+        { name: "Sintra Private Driver (Mar 30)", details: "Sintra Magik or Daytrip" },
+        { name: "Tuk-Tuk Tour (Mar 27)", details: "Eco Tuk Tours" },
+        { name: "Benagil Cave Tour (Apr 1)", details: "CarvoeiroCaves (Explicitly provides toddler life jackets)" },
+        { name: "Tile Painting (Mar 28)", details: "Art of Azulejo (Email or book via Fever)" },
+        { name: "Lagos Grotto Tour (Apr 2)", details: "Book at Lagos Marina" }
+    ]
+};
+
+// --- Trip Data (Massively Detailed Version) ---
 const itineraryData = [
-    { date: "March 26, 2026", dayOfWeek: "Thursday", title: "Arrival & The Grand Brewery", location: "Lisbon", events: [
-        { time: "11:40 AM", type: 'travel', icon: 'plane-landing', title: "Flight TP204 Arrives at LIS", description: "Take your pre-booked transfer to Martinhal Chiado. <strong>Family Note:</strong> Ensure your booking confirms car seats for the boys.", lat: 38.7742, lng: -9.1342, tags: ['Logistics'] },
-        { time: "1:30 PM", type: 'rest', icon: 'key-round', title: "Settle in at Martinhal Chiado", description: "While waiting for the 3:00 PM check-in, drop your bags and get your bearings.", mapLink: "https://www.google.com/maps/search/Martinhal+Lisbon+Chiado", lat: 38.7086, lng: -9.1425, tags: ['Lodging', 'Kid-Friendly'] },
-        { time: "3:30 PM", type: 'activity', icon: 'footprints', title: "Afternoon Session", activityOptions: [
-            { name: 'Explore Chiado & Pastries', type: 'Must-Do', isMustDo: true, description: 'Take a gentle walk to Praça Luís de Camões, grab your first Portuguese pastry, and soak in the city vibes.' },
-            { name: 'Praça das Flores Playground', type: 'Low Key', isMustDo: false, description: 'A quiet, shaded square with a small local playground and kiosks. Perfect for letting toddlers decompress after a flight.' }
-        ], tips: [{ icon: 'footprints', text: 'Utilize the toddler carrier for Keev today if you walk around Chiado; the cobblestones and hills are tough on strollers.' }] },
-        { time: "6:00 PM", type: 'dining', icon: 'utensils-crossed', title: "Dinner: Cervejaria Trindade", description: "Located steps from your hotel, this visually stunning former monastery is loud, chaotic, and beautiful—a low-stress, high-impact environment perfect for the first night.", lat: 38.7118, lng: -9.1418, diningOptions: [
-            { name: 'Cervejaria Trindade', vibe: 'Historic & Lively', notes: 'Primary choice. Great atmosphere where kid noise blends right in.' },
-            { name: 'Time Out Market Lisboa', vibe: 'Food Hall', notes: 'Alternate. Great food hall variety, very stroller friendly, but can be crowded.' }
-        ] }
+    { date: "March 26, 2026", dayOfWeek: "Thursday", title: "Arrival & The Grand Hall", location: "Lisbon", events: [
+        { time: "11:40 AM", type: 'travel', icon: 'plane-landing', title: "Flight TP204 Arrives at LIS", description: "Welcome to Portugal! Clear customs and grab your luggage.", lat: 38.7742, lng: -9.1342, tags: ['Logistics'],
+          tips: [
+              { icon: 'alert-triangle', text: 'Watch Out: Do not just grab a standard taxi. You must pre-book a private transfer ensuring an ISOFIX forward-facing seat for Keev (3) and a booster for Aarit (5).' }
+          ] 
+        },
+        { time: "1:30 PM", type: 'rest', icon: 'key-round', title: "Settle in at Martinhal Chiado", description: "Drop your bags. Official check-in is 3:00 PM, but you can utilize the hotel facilities immediately.", mapLink: "https://www.google.com/maps/search/Martinhal+Lisbon+Chiado", lat: 38.7086, lng: -9.1425, tags: ['Lodging', 'Kid-Friendly'],
+          tips: [
+              { icon: 'info', text: 'Baby Concierge: Ask the front desk for anything you forgot (bottle warmers, potties, specific toddler gear).' },
+              { icon: 'coffee', text: 'While waiting for the room, let the boys decompress in the lobby playroom while you grab a coffee at the M Bar.' }
+          ] 
+        },
+        { time: "3:30 PM", type: 'activity', icon: 'footprints', title: "Afternoon Session: Stretch Your Legs", activityOptions: [
+            { name: 'Praça do Comércio & Riverfront', type: 'Must-Do', isMustDo: true, description: 'Take a flat, easy walk down to the massive Praça do Comércio square. Let the boys run around the open space and watch the boats on the Tagus River.' },
+            { name: 'Praça das Flores Playground', type: 'Low Key', isMustDo: false, description: 'A quiet, shaded square with a small local playground and kiosks. Perfect for letting toddlers decompress after a flight without crowds.' }
+        ], lat: 38.7075, lng: -9.1364,
+          tips: [
+              { icon: 'footprints', text: 'Footwear Warning: The Chiado district is extremely hilly with slick calçada (cobblestones). Use the toddler carrier for Keev today; strollers are difficult here.' }
+          ] 
+        },
+        { time: "6:00 PM", type: 'dining', icon: 'utensils-crossed', title: "Dinner: Cervejaria Trindade", description: "Located steps from your hotel. It is a visually stunning former monastery, famous for steak and seafood.", lat: 38.7118, lng: -9.1418, diningOptions: [
+            { name: 'Cervejaria Trindade', vibe: 'Historic & Lively', notes: 'Primary choice. It’s loud, grand, and high-energy—perfect because if the kids are loud or cranky from jetlag, it will blend right in.' },
+            { name: 'Time Out Market Lisboa', vibe: 'Food Hall', notes: 'Alternate. Vibrant and flat (stroller friendly), but can be overwhelming on Day 1.' }
+        ],
+          tips: [
+              { icon: 'utensils', text: 'Order the "Bife à Trindade" (steak) for yourselves, and simple grilled fish or croquettes for the boys.' }
+          ]
+        }
     ]},
-    { date: "March 27, 2026", dayOfWeek: "Friday", title: "Tuk-Tuks & Modern Gastronomy", location: "Lisbon", events: [
-        { time: "9:30 AM", type: 'activity', icon: 'sun', title: "Morning Session", activityOptions: [
-            { name: 'Private Tuk-Tuk & Castle', type: 'Must-Do', isMustDo: true, description: 'Electric Tuk-Tuk Tour through Alfama, ending at São Jorge Castle. (Book skip-the-line tickets in advance).' },
+    { date: "March 27, 2026", dayOfWeek: "Friday", title: "Science, Tuk-Tuks & Hidden Playgrounds", location: "Lisbon", events: [
+        { time: "9:30 AM", type: 'activity', icon: 'microscope', title: "Morning Session: Interactive Play", activityOptions: [
+            { name: 'Pavilhão do Conhecimento (Science Museum)', type: 'Must-Do', isMustDo: true, description: 'Located in Parque das Nações. 100% interactive for toddlers. Aarit will love the physics exhibits, and Keev will love the water-play areas.' },
             { name: 'Jardim da Estrela', type: 'Low Key', isMustDo: false, description: 'A gorgeous, massive park with duck ponds, an incredible playground, and a kiosk cafe where parents can grab coffee.' }
-        ], lat: 38.7139, lng: -9.1335, tags: ['Kid-Favorite'] },
-        { time: "12:30 PM", type: 'dining', icon: 'utensils-crossed', title: "Lunch: Ofício", description: "Have your tuk-tuk driver or an Uber drop you near this trendy spot. Known for modern Portuguese cuisine. Going for lunch avoids the tighter evening crowds.", lat: 38.7093, lng: -9.1420 },
-        { time: "3:00 PM", type: 'activity', icon: 'moon', title: "Afternoon Session", activityOptions: [
-            { name: 'Alfama Walking Exploration', type: 'Must-Do', isMustDo: true, description: 'Navigate the winding, historic streets of Alfama on foot (carrier recommended over stroller here).' },
-            { name: 'Hotel Playroom / Downtime', type: 'Low Key', isMustDo: false, description: 'Return to the apartment for naps and utilize the fantastic supervised kids playroom at Martinhal.' }
+        ], lat: 38.7622, lng: -9.0950, tags: ['Kid-Favorite'],
+          tips: [
+              { icon: 'clock', text: 'Hit the Science museum right when it opens while energy is high and crowds are low.' }
+          ]
+        },
+        { time: "12:30 PM", type: 'dining', icon: 'utensils-crossed', title: "Lunch: Ofício", description: "Take an Uber back toward Chiado to this trendy, modern spot.", lat: 38.7093, lng: -9.1420,
+          tips: [
+              { icon: 'star', text: 'Must Order: Their famous savory baked cheese tart is legendary.' }
+          ]
+        },
+        { time: "3:00 PM", type: 'activity', icon: 'truck', title: "Afternoon Session: Alfama & The Castle", activityOptions: [
+            { name: 'Private Tuk-Tuk & São Jorge Castle', type: 'Must-Do', isMustDo: true, description: 'Hire a private electric Tuk-Tuk to navigate the steep hills of Alfama. Have them drop you right at the Castle entrance.' },
+            { name: 'Hotel Playroom / Downtime', type: 'Low Key', isMustDo: false, description: 'If the jetlag hits hard, return to Martinhal and utilize the fantastic supervised kids playroom so you and Nehal can rest.' }
+        ], lat: 38.7139, lng: -9.1335,
+          tips: [
+              { icon: 'alert-circle', text: 'Castle Hack #1: Buy skip-the-line tickets online.' },
+              { icon: 'shield-check', text: 'Castle Hack #2: If there is still a line, look for the "Family Priority" lane. Families with children under 5 legally get to skip the main queue in Portugal!' },
+              { icon: 'map-pin', text: 'Secret Playground: After the castle, ask your driver to stop at Miradouro do Recolhimento. It’s a hidden, gated playground with orange trees and peacocks where the kids can run safely.' }
+          ] 
+        },
+        { time: "6:30 PM", type: 'dining', icon: 'utensils-crossed', title: "Dinner: Pizzaria Lisboa", description: "By famous Chef José Avillez. High-end, delicious pizza in an environment that is very welcoming to kids.", lat: 38.7094, lng: -9.1417 }
+    ]},
+    { date: "March 28, 2026", dayOfWeek: "Saturday", title: "Tiles & Royal Carriages", location: "Lisbon (Belém)", events: [
+        { time: "10:00 AM", type: 'activity', icon: 'brush', title: "Morning Session: Hands-On Art", activityOptions: [
+            { name: 'Art of Azulejo Workshop', type: 'Must-Do', isMustDo: true, description: 'Book a family tile-painting workshop. Aarit (5) is the perfect age to focus on painting a traditional tile, and Keev can play with clay/paint. A wonderful tactile break.' },
+            { name: 'Jardim da Praça do Império', type: 'Low Key', isMustDo: false, description: 'Massive, flat formal gardens right in Belém with grand fountains and massive open spaces for the boys to run.' }
+        ], lat: 38.6916, lng: -9.2160, tags: ['Stroller Friendly', 'Tactile'] },
+        { time: "12:30 PM", type: 'dining', icon: 'coffee', title: "Lunch: Pastéis de Belém", description: "The birthplace of Portugal's famous custard tarts. Also serves savory lunch items.", lat: 38.6975, lng: -9.2032,
+          tips: [
+              { icon: 'alert-triangle', text: 'Watch Out: Do NOT stand in the massive takeout line outside. Walk past it, go delete it, inside the building, and sit in the labyrinth of cafe rooms for much faster table service.' }
+          ]
+        },
+        { time: "2:30 PM", type: 'activity', icon: 'crown', title: "Afternoon Session: Fairytale Transport", activityOptions: [
+            { name: 'National Coach Museum', type: 'Must-Do', isMustDo: true, description: 'A guaranteed hit with Aarit and Keev; it features spectacular, 300-year-old royal carriages that look straight out of Cinderella.' },
+            { name: 'Belém Waterfront Walk', type: 'Low Key', isMustDo: false, description: 'Walk the perfectly flat, wide promenade along the river to see the Discoveries Monument and Belém Tower. Very stroller friendly.' }
+        ], lat: 38.6968, lng: -9.1992 },
+        { time: "6:30 PM", type: 'dining', icon: 'utensils', title: "Dinner: Ibo", description: "Located right on the waterfront (Cais do Sodré area). Sophisticated dining, but spacious enough for a family.", lat: 38.7061, lng: -9.1436 }
+    ]},
+    { date: "March 29, 2026", dayOfWeek: "Sunday", title: "Sunday Vibe & Under the Sea", location: "Lisbon", events: [
+        { time: "9:30 AM", type: 'activity', icon: 'fish', title: "Morning Session: The Oceanarium", activityOptions: [
+            { name: 'Oceanário de Lisboa', type: 'Must-Do', isMustDo: true, description: 'Take an Uber to Parque das Nações. This is consistently ranked as one of the best aquariums globally. The massive central tank will mesmerize the boys.' },
+            { name: 'Maritime Playgrounds', type: 'Low Key', isMustDo: false, description: 'Walk the waterfront boardwalks outside the aquarium. There are several amazing, free maritime-themed playgrounds right along the river.' }
+        ], lat: 38.7634, lng: -9.0937, tags: ['Kid-Favorite'],
+          tips: [
+              { icon: 'ticket', text: 'Book Oceanarium tickets online in advance. It is completely flat and stroller accessible.' }
+          ]
+        },
+        { time: "12:30 PM", type: 'dining', icon: 'utensils-crossed', title: "Lunch: D'Bacalhau", description: "Casual, bustling waterfront restaurant in Parque das Nações known for excellent Portuguese food.", lat: 38.7663, lng: -9.0945 },
+        { time: "3:00 PM", type: 'activity', icon: 'shopping-bag', title: "Afternoon Session: Sunday Markets", activityOptions: [
+            { name: 'LX Factory Sunday Market', type: 'Must-Do', isMustDo: true, description: 'Take an Uber to Alcântara. It is a no-car zone filled with street art, quirky shops, and a vibrant Sunday market. Very visually stimulating.' },
+            { name: 'Jardim da Estrela', type: 'Low Key', isMustDo: false, description: 'If the kids just need to play, skip LX Factory and head to this park. It is considered Lisbon’s best playground for young children.' }
+        ], lat: 38.7032, lng: -9.1787 },
+        { time: "6:30 PM", type: 'dining', icon: 'utensils-crossed', title: "Dinner: Pizzeria ZeroZero", description: "Located in Príncipe Real. Famous for its fantastic outdoor garden patio where kids have space to breathe while you enjoy great food.", lat: 38.7164, lng: -9.1477 }
+    ]},
+    { date: "March 30, 2026", dayOfWeek: "Monday", title: "Fairytale Sintra (Crowd Avoidance)", location: "Sintra (Day Trip)", events: [
+        { time: "9:00 AM", type: 'travel', icon: 'car', title: "Private Driver to Sintra", description: "A private driver is mandatory here to avoid the physical toll of train/bus combos with a 3 and 5-year-old.", lat: 38.7963, lng: -9.3900,
+          tips: [
+              { icon: 'calendar', text: 'Why Monday? Doing Sintra on Monday avoids the peak weekend tourist surges.' }
+          ]
+        },
+        { time: "10:00 AM", type: 'activity', icon: 'castle', title: "Morning Session: The Palaces", activityOptions: [
+            { name: 'Pena Palace (Exteriors Only)', type: 'Must-Do', isMustDo: true, description: 'The iconic colorful castle. Buy "Park and National Palace of Pena" tickets, but SKIP the interior rooms—they are slow, stuffy, and a nightmare with toddlers. The exterior terraces are the best part anyway.' },
+            { name: 'Quinta da Regaleira', type: 'Must-Do', isMustDo: true, description: 'Alternatively, focus here. The mystical grottoes, hidden tunnels, and initiation wells are a natural adventure playground for Aarit.' }
+        ], lat: 38.7876, lng: -9.3906, tags: ['Adventure'],
+          tips: [
+              { icon: 'footprints', text: 'Warning: Leave the stroller in the car today. Sintra requires walking up steep, uneven paths. A toddler carrier for Keev is essential.' }
+          ]
+        },
+        { time: "1:30 PM", type: 'dining', icon: 'utensils-crossed', title: "Lunch: Tascantiga", description: "Located in Sintra's historic center, known for excellent tapas and quick service.", lat: 38.7963, lng: -9.3900 },
+        { time: "3:00 PM", type: 'activity', icon: 'leaf', title: "Afternoon Session: Open Space", activityOptions: [
+            { name: 'Monserrate Park', type: 'Must-Do', isMustDo: true, description: 'Unlike the crowded palaces, Monserrate is a massive, stunning botanical garden with gigantic rolling lawns. Let the boys take their shoes off and run wild to burn off energy.' },
+            { name: 'Sintra Village Stroll', type: 'Low Key', isMustDo: false, description: 'Grab an outdoor table in the village, order traditional Queijadas (sweet pastries), and let the kids rest.' }
+        ], lat: 38.7930, lng: -9.4206 },
+        { time: "7:00 PM", type: 'dining', icon: 'glass-water', title: "Dinner: Bairro do Avillez (The Páteo)", description: "Back in Lisbon. An upscale, spectacular grand finale to the Lisbon leg of your trip. The Páteo area is spacious and comfortable.", lat: 38.7093, lng: -9.1420 }
+    ]},
+    { date: "March 31, 2026", dayOfWeek: "Tuesday", title: "The Journey South", location: "Lisbon to Algarve", events: [
+        { time: "10:00 AM", type: 'travel', icon: 'car', title: "Pick up Rental Car", description: "Pick up your rental car in Lisbon. This one-way rental avoids train transfers.", lat: 38.7742, lng: -9.1342, tags: ['Logistics'],
+          tips: [
+              { icon: 'shield', text: 'Crucial Check: Before leaving the lot, double-check the installation of the booster seat (Aarit) and the forward-facing 5-point harness seat (Keev).' }
+          ]
+        },
+        { time: "11:00 AM", type: 'activity', icon: 'map', title: "Morning Session (The Drive)", activityOptions: [
+            { name: 'Direct Drive down the A2', type: 'Must-Do', isMustDo: true, description: 'Power through the 2.5 hour drive down the A2 highway while the kids (hopefully) take a morning nap.' },
+            { name: 'Service Station Pitstop', type: 'Low Key', isMustDo: false, description: 'Stop at an "Área de Serviço". Portuguese highway service stations are surprisingly clean, have decent hot food, and often have small play areas to let kids stretch their legs.' }
         ] },
-        { time: "6:30 PM", type: 'dining', icon: 'utensils-crossed', title: "Relaxed Dinner", description: "Have a relaxed dinner in your apartment utilizing the full kitchen, or a casual spot nearby.", lat: 38.7094, lng: -9.1417, diningOptions: [
-            { name: 'Pizzaria Lisboa', vibe: 'Casual Sit-Down', notes: 'Alternate option by Chef José Avillez if you want an easy dinner out.' }
-        ]}
-    ]},
-    { date: "March 28, 2026", dayOfWeek: "Saturday", title: "Belém's Age of Discoveries", location: "Lisbon (Belém)", events: [
-        { time: "10:00 AM", type: 'activity', icon: 'sun', title: "Morning Session", activityOptions: [
-            { name: 'Belém Tower & Monastery', type: 'Must-Do', isMustDo: true, description: 'Walk the flat, stroller-friendly waterfront past the Belém Tower and the stunning Jerónimos Monastery.' },
-            { name: 'Jardim da Praça do Império', type: 'Low Key', isMustDo: false, description: 'Massive, flat formal gardens right in Belém with fountains and massive open spaces for the boys to run.' }
-        ], lat: 38.6916, lng: -9.2160, tags: ['Stroller Friendly'] },
-        { time: "12:30 PM", type: 'dining', icon: 'coffee', title: "Lunch: Pastéis de Belém", description: "Skip the takeout line and go through the entryway for faster table service to enjoy the famous warm custard tarts.", lat: 38.6975, lng: -9.2032 },
-        { time: "2:30 PM", type: 'activity', icon: 'crown', title: "Afternoon Session", activityOptions: [
-            { name: 'National Coach Museum', type: 'Must-Do', isMustDo: true, description: 'A guaranteed hit with Aarit and Keev; it features spectacular, fairytale-like royal carriages.' },
-            { name: 'Monsanto Forest Park', type: 'Low Key', isMustDo: false, description: 'Head to Parque Recreativo do Alvito in Monsanto. It has a huge wooden playground, teepees, and a café.' }
-        ], lat: 38.6968, lng: -9.1992 }
-    ]},
-    { date: "March 29, 2026", dayOfWeek: "Sunday", title: "Fairytale Sintra", location: "Sintra (Day Trip)", events: [
-        { time: "9:00 AM", type: 'travel', icon: 'car', title: "Private Driver to Sintra", description: "A private driver avoids train/bus fatigue.", lat: 38.7963, lng: -9.3900 },
-        { time: "10:00 AM", type: 'activity', icon: 'sun', title: "Morning Session", activityOptions: [
-            { name: 'Quinta da Regaleira', type: 'Must-Do', isMustDo: true, description: 'The mystical grottoes, hidden tunnels, and initiation wells are a natural adventure playground for Aarit.' },
-            { name: 'Parque da Liberdade', type: 'Low Key', isMustDo: false, description: 'Sintra\'s lovely public park. Lots of nature, winding paths, and far less crowded than the palaces.' }
-        ], lat: 38.7963, lng: -9.3960, tags: ['Adventure'] },
-        { time: "1:30 PM", type: 'dining', icon: 'utensils-crossed', title: "Lunch: Tascantiga", description: "Located in Sintra's historic center, known for excellent tapas.", lat: 38.7963, lng: -9.3900 },
-        { time: "3:00 PM", type: 'activity', icon: 'moon', title: "Afternoon Session", activityOptions: [
-            { name: 'Sintra National Palace', type: 'Must-Do', isMustDo: true, description: 'Located right in town (no steep hikes required). Famous for its giant twin chimneys and historic interiors.' },
-            { name: 'Village Café Relaxation', type: 'Low Key', isMustDo: false, description: 'Grab an outdoor table in the village, order traditional Queijadas, and let the kids play with small toys while you rest.' }
-        ] }
-    ]},
-    { date: "March 30, 2026", dayOfWeek: "Monday", title: "Under the Sea", location: "Lisbon (Parque das Nações)", events: [
-        { time: "10:00 AM", type: 'dining', icon: 'coffee', title: "Breakfast/Brunch", description: "Start the day with a great breakfast before heading to the modern expo district.", lat: 38.7634, lng: -9.0937 },
-        { time: "11:00 AM", type: 'activity', icon: 'sun', title: "Morning Session", activityOptions: [
-            { name: 'Lisbon Oceanarium', type: 'Must-Do', isMustDo: true, description: 'Consistently ranked among the best in the world. The massive central tank is mesmerizing for kids.' },
-            { name: 'Jardim Garcia de Orta', type: 'Low Key', isMustDo: false, description: 'A beautiful botanical garden right next to the Oceanarium with wide, flat paths perfectly suited for strollers.' }
-        ], tags: ['Kid-Favorite'] },
-        { time: "1:30 PM", type: 'dining', icon: 'utensils-crossed', title: "Waterfront Lunch", description: "Plenty of modern, casual, and family-friendly dining options line the riverfront in this district." },
-        { time: "3:00 PM", type: 'activity', icon: 'moon', title: "Afternoon Session", activityOptions: [
-            { name: 'Science Museum & Cable Car', type: 'Must-Do', isMustDo: true, description: 'Ride the Telecabine, then hit the Pavilhão do Conhecimento (Science Museum) which has an incredible dedicated toddler zone.' },
-            { name: 'Maritime Playgrounds', type: 'Low Key', isMustDo: false, description: 'Walk the boardwalks. There are several amazing, free maritime-themed playgrounds right along the river.' }
-        ] }
-    ]},
-    { date: "March 31, 2026", dayOfWeek: "Tuesday", title: "Journey to the Algarve", location: "Lisbon to Algarve", events: [
-        { time: "9:30 AM", type: 'travel', icon: 'car', title: "Pick up Rental Car", description: "Pick up your rental car in Lisbon. Ensure your pre-booked booster (Aarit) and toddler seat (Keev) are installed securely.", lat: 38.7742, lng: -9.1342, tags: ['Logistics'] },
-        { time: "10:30 AM", type: 'activity', icon: 'sun', title: "Morning Session (Drive South)", activityOptions: [
-            { name: 'Direct Drive to Algarve', type: 'Must-Do', isMustDo: true, description: 'Power through the 2.5 hour drive down the A2 while the kids (hopefully) take a morning nap.' },
-            { name: 'Pitstop at Alcácer do Sal', type: 'Low Key', isMustDo: false, description: 'Stop halfway at this historic town. Take a 30-minute riverside walk to stretch legs and burn energy before getting back in the car.' }
+        { time: "2:00 PM", type: 'rest', icon: 'key-round', title: "Check-in at VILA VITA Parc", description: "Arrive in the Algarve and settle into your Family Suite (Oasis).", lat: 37.1017, lng: -8.3813, tags: ['Lodging'],
+          tips: [
+              { icon: 'info', text: 'Resort Perk: Inquire immediately about the schedule for Annabella’s Kids Park (for Aarit) and Natalie’s Crèche (for Keev).' }
+          ]
+        },
+        { time: "4:00 PM", type: 'activity', icon: 'sun', title: "Afternoon Session: Resort Life", activityOptions: [
+            { name: 'Resort Beach & Pools', type: 'Must-Do', isMustDo: true, description: 'Hit the heated pools or walk down to the resort’s sheltered cove beach for your first taste of the Algarve sand.' },
+            { name: 'Resort Exploration', type: 'Low Key', isMustDo: false, description: 'Take a relaxed walk around the massive resort grounds to get your bearings.' }
         ] },
-        { time: "3:00 PM", type: 'rest', icon: 'key-round', title: "Check-in at VILA VITA Parc", description: "Settle into your beautiful coastal resort.", lat: 37.1017, lng: -8.3813, tags: ['Lodging'] },
-        { time: "4:00 PM", type: 'activity', icon: 'moon', title: "Afternoon Session", activityOptions: [
-            { name: 'Resort Beach & Pools', type: 'Must-Do', isMustDo: true, description: 'Hit the heated pools or walk down to the resort’s sheltered cove beach for your first taste of the Algarve.' },
-            { name: 'Vila Vita Kids’ Park', type: 'Low Key', isMustDo: false, description: 'Let the boys loose on the resort’s playground structures while you and your wife grab a coffee and relax.' }
-        ] },
-        { time: "6:30 PM", type: 'dining', icon: 'utensils-crossed', title: "Dinner: Vila Vita Biergarten", description: "Bavarian food, casual and lively, located right on the resort grounds.", lat: 37.1126, lng: -8.3842 }
+        { time: "6:30 PM", type: 'dining', icon: 'utensils-crossed', title: "Dinner: Vila Vita Biergarten", description: "Bavarian food, casual and lively, located right on the resort grounds. No driving required tonight.", lat: 37.1126, lng: -8.3842 }
     ]},
-    { date: "April 1, 2026", dayOfWeek: "Wednesday", title: "Caves, Coasts, & Crafts", location: "Algarve", events: [
-        { time: "9:30 AM", type: 'activity', icon: 'sun', title: "Morning Session", activityOptions: [
-            { name: 'Benagil Cave Boat Tour', type: 'Must-Do', isMustDo: true, description: 'Pre-booked boat tour. (Choose a stable catamaran over a speedboat for safety and comfort with the boys).' },
-            { name: 'Praia de Carvoeiro Beach Play', type: 'Low Key', isMustDo: false, description: 'A beach right in the town square. Zero steep staircases to navigate, perfect for easy sandcastle building.' }
-        ], lat: 37.0872, lng: -8.4258, tags: ['Adventure'] },
-        { time: "12:30 PM", type: 'dining', icon: 'utensils-crossed', title: "Lunch in Carvoeiro", description: "Grab lunch at one of the many cafes overlooking the beach." },
-        { time: "2:30 PM", type: 'activity', icon: 'moon', title: "Afternoon Session", activityOptions: [
-            { name: 'Porches Pottery Workshop', type: 'Must-Do', isMustDo: true, description: 'A wonderful, tactile activity. Watch the artisans at work, and let Aarit and Keev paint their own ceramics.' },
+    { date: "April 1, 2026", dayOfWeek: "Wednesday", title: "Sea Caves & Artisan Hands", location: "Algarve", events: [
+        { time: "9:30 AM", type: 'activity', icon: 'ship', title: "Morning Session: Cave Exploration", activityOptions: [
+            { name: 'Benagil Cave Boat Tour', type: 'Must-Do', isMustDo: true, description: 'See the famous sea caves from the water.' },
+            { name: 'Praia de Carvoeiro Beach Play', type: 'Low Key', isMustDo: false, description: 'If the sea is too rough for boats, go to Carvoeiro beach. It has zero steep staircases to navigate, perfect for easy sandcastle building.' }
+        ], lat: 37.0872, lng: -8.4258, tags: ['Adventure'],
+          tips: [
+              { icon: 'life-buoy', text: 'Boat Safety: Book specifically with CarvoeiroCaves or a similar highly-rated operator. Explicitly request a stable Catamaran (not a speedboat) and confirm they have toddler-sized life jackets for a 3-year-old.' }
+          ]
+        },
+        { time: "12:30 PM", type: 'dining', icon: 'utensils-crossed', title: "Lunch in Carvoeiro", description: "Grab a casual lunch at one of the cafes overlooking the beach.", lat: 37.0963, lng: -8.4715 },
+        { time: "2:30 PM", type: 'activity', icon: 'brush', title: "Afternoon Session: Tactile Crafts", activityOptions: [
+            { name: 'Porches Pottery Workshop', type: 'Must-Do', isMustDo: true, description: 'A wonderful, tactile activity to escape the afternoon sun. Watch the artisans hand-paint traditional tiles, and let Aarit and Keev paint their own ceramics to take home.' },
             { name: 'Carvoeiro Boardwalk', type: 'Low Key', isMustDo: false, description: 'A flat, safe, and stunning wooden boardwalk built over the cliffs. Extremely stroller friendly and highly scenic.' }
-        ], lat: 37.1265, lng: -8.3995 }
+        ], lat: 37.1265, lng: -8.3995 },
+        { time: "7:00 PM", type: 'dining', icon: 'utensils', title: "Dinner: Adega", description: "Rustic, traditional Portuguese food located conveniently on-site at Vila Vita.", lat: 37.1017, lng: -8.3813 }
     ]},
     { date: "April 2, 2026", dayOfWeek: "Thursday", title: "Anniversary Celebration & Lagos", location: "Algarve", events: [
-        { time: "10:00 AM", type: 'activity', icon: 'sun', title: "Morning Session", activityOptions: [
-            { name: 'Lagos Grotto Tour', type: 'Must-Do', isMustDo: true, description: 'Drive to Lagos. Take a short 30-45 minute small grotto boat tour right from the marina to go inside the rock arches.' },
+        { time: "10:00 AM", type: 'activity', icon: 'anchor', title: "Morning Session: Lagos", activityOptions: [
+            { name: 'Lagos Grotto Boat Tour', type: 'Must-Do', isMustDo: true, description: 'Drive to Lagos. Take a short 30-45 minute small grotto boat tour right from the marina to go inside the rock arches (Ponta da Piedade).' },
             { name: 'Meia Praia (Lagos Beach)', type: 'Low Key', isMustDo: false, description: 'One of the longest, widest, and flattest beaches in the Algarve. Uncrowded and perfect for toddlers to run wild.' }
         ], lat: 37.1085, lng: -8.6734 },
-        { time: "1:00 PM", type: 'dining', icon: 'utensils-crossed', title: "Lunch: Prato Feio (Almancil)", description: "Stop on the drive back for incredible, rustic Portuguese soul food in a welcoming, family-friendly environment.", lat: 37.0850, lng: -8.0280 },
-        { time: "3:30 PM", type: 'activity', icon: 'moon', title: "Afternoon Session", activityOptions: [
-            { name: 'Anniversary Photos/Beach', type: 'Must-Do', isMustDo: true, description: 'Take some dedicated family photos on the resort beach to commemorate your anniversary trip.' },
-            { name: 'Quiet Pool Time', type: 'Low Key', isMustDo: false, description: 'Take advantage of the resort pools or supervised kid activities to rest up before your big dinner.' }
-        ], lat: 37.1017, lng: -8.3813 },
-        { time: "7:00 PM", type: 'dining', icon: 'glass-water', title: "Anniversary Dinner: Praia Dourada", description: "Celebrate your anniversary! It’s a chic, upscale restaurant located directly on the resort's beach. You can enjoy wonderful food while Aarit and Keev play safely in the sand right next to your table.", lat: 37.1017, lng: -8.3813, tags: ['Special Event', 'Kid-Friendly'] }
+        { time: "1:00 PM", type: 'dining', icon: 'utensils-crossed', title: "Lunch: A Forja (Lagos)", description: "Keep it local and avoid unnecessary driving! Stop at this highly-rated, family-friendly spot right in Lagos for authentic Portuguese food.", lat: 37.1025, lng: -8.6740 },
+        { time: "3:00 PM", type: 'activity', icon: 'bird', title: "Afternoon Session: Animals & Rest", activityOptions: [
+            { name: 'Lagos Zoo', type: 'Must-Do', isMustDo: true, description: 'A highly walkable, boutique zoo specifically tailored for young kids, featuring a great petting farm area and monkey islands.' },
+            { name: 'Resort Nap & Prep', type: 'Low Key', isMustDo: false, description: 'Head back to Vila Vita early. Get the kids a solid nap so everyone is in a great mood for the anniversary dinner tonight.' }
+        ], lat: 37.1511, lng: -8.7663 },
+        { time: "7:00 PM", type: 'dining', icon: 'glass-water', title: "Happy 10th Anniversary! (Praia Dourada)", description: "Celebrate 10 years! It’s a chic, upscale restaurant located directly on the resort's beach.", lat: 37.1017, lng: -8.3813, tags: ['Special Event', 'Kid-Friendly'],
+          tips: [
+              { icon: 'star', text: 'The Setup: Request a table right on the edge of the sand. You and Nehal can enjoy fantastic food, cocktails, and sunset views while Aarit and Keev play safely in the sand right next to your table.' }
+          ]
+        }
     ]},
-    { date: "April 3, 2026", dayOfWeek: "Friday", title: "Flamingos & Sunsets", location: "Algarve", events: [
-        { time: "10:00 AM", type: 'activity', icon: 'sun', title: "Morning Session", activityOptions: [
-            { name: 'Ludo Trail (Ria Formosa)', type: 'Must-Do', isMustDo: true, description: 'A flat, easy stroller walk through the wetlands to spot flamingos and fiddler crabs.' },
-            { name: 'Parque das Figuras (Faro)', type: 'Low Key', isMustDo: false, description: 'A large urban park near Faro with wide open spaces and a great playground for the kids.' }
+    { date: "April 3, 2026", dayOfWeek: "Friday", title: "Flamingos & Giant Sculptures", location: "Algarve", events: [
+        { time: "10:00 AM", type: 'activity', icon: 'bird', title: "Morning Session: Nature Walk", activityOptions: [
+            { name: 'Ludo Trail (Ria Formosa)', type: 'Must-Do', isMustDo: true, description: 'A completely flat, easy stroller walk through the coastal wetlands. The boys can spot wild flamingos and fiddler crabs.' },
+            { name: 'Parque das Figuras (Faro)', type: 'Low Key', isMustDo: false, description: 'A large urban park near Faro with wide open spaces and a great playground.' }
         ], lat: 37.0211, lng: -7.9866, tags: ['Outdoors', 'Stroller Friendly'] },
-        { time: "1:00 PM", type: 'dining', icon: 'utensils-crossed', title: "Lunch: Austa (Almancil)", description: "A high-end, farm-to-table culinary experience. Note: Children under 7 are only permitted during the day, making lunch perfect.", lat: 37.0850, lng: -8.0280 },
-        { time: "4:00 PM", type: 'activity', icon: 'moon', title: "Afternoon Session", activityOptions: [
-            { name: 'Sunset at Mirador Bar', type: 'Must-Do', isMustDo: true, description: 'Located at Pine Cliffs Resort. Let the kids play on the grassy lawn while you take in the cliff views with a drink.' },
-            { name: 'Mini-Golf / Gardens', type: 'Low Key', isMustDo: false, description: 'Play a round of family mini-golf near Almancil, or simply stroll through your own resort\'s lush gardens.' }
-        ], lat: 37.0950, lng: -8.1750 },
-        { time: "7:30 PM", type: 'dining', icon: 'utensils', title: "Dinner: A Quinta", description: "Known for its excellent menu and desserts.", lat: 37.0850, lng: -8.0280 }
+        { time: "1:00 PM", type: 'dining', icon: 'utensils-crossed', title: "Lunch: Austa (Almancil)", description: "A high-end, modern farm-to-table culinary experience.", lat: 37.0850, lng: -8.0280,
+          tips: [
+              { icon: 'info', text: 'Timing Note: Children under 7 are only permitted here during the day, making this the perfect lunch reservation.' }
+          ]
+        },
+        { time: "3:30 PM", type: 'activity', icon: 'mountain', title: "Afternoon Session: Visual Wonders", activityOptions: [
+            { name: 'Sand City (Fiesa)', type: 'Must-Do', isMustDo: true, description: 'The world’s largest sand sculpture park. It is visually mind-blowing for a 5-year-old to see 40-foot tall castles and characters carved out of sand.' },
+            { name: 'Mirador Champagne Bar (Sunset)', type: 'Low Key', isMustDo: false, description: 'Located at Pine Cliffs Resort. Let the kids play on the sprawling grassy lawns while you take in the cliff views with a drink.' }
+        ], lat: 37.1260, lng: -8.3340 },
+        { time: "7:30 PM", type: 'dining', icon: 'utensils', title: "Dinner: A Quinta", description: "Known for its excellent menu, rustic setting, and legendary desserts.", lat: 37.0850, lng: -8.0280 }
     ]},
-    { date: "April 4, 2026", dayOfWeek: "Saturday", title: "Smooth Departure", location: "Algarve to NYC", events: [
-        { time: "8:00 AM", type: 'travel', icon: 'car', title: "Drive to Faro Airport (FAO)", description: "Enjoy a final resort breakfast, then drive to FAO and return the rental car.", lat: 37.0144, lng: -7.9659, tags: ['Logistics'] },
-        { time: "11:15 AM", type: 'travel', icon: 'plane-takeoff', title: "Flight TP1902 to Lisbon", description: "Short hopper flight up to LIS.", lat: 38.7742, lng: -9.1342 },
+    { date: "April 4, 2026", dayOfWeek: "Saturday", title: "The Smooth Departure", location: "Algarve to NYC", events: [
+        { time: "08:30 AM", type: 'travel', icon: 'car', title: "Checkout & Drive to FAO", description: "Enjoy a final resort breakfast, checkout, and drive to Faro Airport (FAO).", lat: 37.0144, lng: -7.9659, tags: ['Logistics'],
+          tips: [
+              { icon: 'clock', text: 'Confirm your guaranteed 4:00 PM late check-out doesn\'t accidentally apply; you need to leave in the morning!' },
+              { icon: 'car', text: 'Drop off the rental car and ensure you get a receipt confirming the return of both car seats.' }
+          ]
+        },
+        { time: "11:15 AM", type: 'travel', icon: 'plane-takeoff', title: "Flight TP1902 to Lisbon", description: "Short 45-minute hopper flight up to LIS.", lat: 38.7742, lng: -9.1342 },
         { time: "1:00 PM", type: 'activity', icon: 'coffee', title: "Lisbon Layover Options", activityOptions: [
-            { name: 'Airport Lounge', type: 'Must-Do', isMustDo: true, description: 'Book lounge access in advance. Get comfortable seating, free food, and a quiz space away from terminal chaos.' },
-            { name: 'Airport Play Area', type: 'Low Key', isMustDo: false, description: 'Utilize the Lisbon airport children’s play area to let the boys burn out their energy before the transatlantic flight.' }
-        ] },
-        { time: "5:55 PM", type: 'travel', icon: 'plane', title: "Flight TP203 to Newark", description: "Safe travels home!" }
+            { name: 'TAP Premium Lounge', type: 'Must-Do', isMustDo: true, description: 'Book lounge access in advance. Get comfortable seating, free food, and a quiz space away from terminal chaos. Essential for keeping stress low before a transatlantic flight.' },
+            { name: 'Airport Play Area', type: 'Low Key', isMustDo: false, description: 'Utilize the Lisbon airport children’s play areas to let the boys burn out their energy.' }
+        ],
+          tips: [
+              { icon: 'alert-triangle', text: 'Strict Rule: Do not attempt to leave the airport, store luggage, and take a taxi into the city for a 6-hour layover. The stress of managing two toddlers through security twice is not worth it.' }
+          ]
+        },
+        { time: "5:55 PM", type: 'travel', icon: 'plane', title: "Flight TP203 to Newark", description: "Board your flight home. Safe travels!" }
     ]}
 ];
 
 let checklists = {
-    "Booking Priorities": [
-        { text: "Multi-city flights (NYC→LIS, FAO→NYC)", checked: true },
+    "Critical Bookings (Do These ASAP)": [
+        { text: "Multi-city flights (EWR→LIS, FAO→EWR)", checked: true },
         { text: "Martinhal Chiado (5 nights)", checked: true },
         { text: "Vila Vita Parc (4 nights)", checked: true },
-        { text: "Rental car pick-up in LIS, drop-off in FAO (with 2 car seats)", checked: false },
-        { text: "Private airport transfer in Lisbon (request boosters/seats)", checked: false },
-        { text: "Anniversary Dinner Reservation (Praia Dourada)", checked: false }
+        { text: "Rental car pick-up LIS, drop-off FAO (Add Booster + Toddler Seat!)", checked: true },
+        { text: "Private airport transfer in Lisbon (Request car seats)", checked: false },
+        { text: "Anniversary Dinner at Praia Dourada (April 2)", checked: false }
     ],
-    "Kid Essentials (Aarit 5½, Keev 3)": [
-        { text: "Lightweight Travel Stroller (for Keev/Belém)", checked: false },
-        { text: "Toddler Carrier (helpful for Sintra/Chiado)", checked: false },
+    "Activity Reservations": [
+        { text: "São Jorge Castle: Skip-the-line tickets", checked: false },
+        { text: "Private Tuk-Tuk Tour (Lisbon)", checked: false },
+        { text: "Private Driver for Sintra", checked: false },
+        { text: "Benagil Cave Tour (Request Catamaran & toddler life jackets)", checked: false },
+        { text: "Oceanário de Lisboa tickets", checked: false },
+        { text: "Lisbon Airport Lounge passes (for layover)", checked: false }
+    ],
+    "Kid Essentials (Aarit 5, Keev 3)": [
+        { text: "Lightweight Travel Stroller (for Belém/Algarve)", checked: false },
+        { text: "Toddler Carrier (Mandatory for Chiado/Sintra)", checked: false },
         { text: "Healthy/Organic snacks for travel days", checked: false },
         { text: "Tablet/Headphones pre-loaded with shows", checked: false },
         { text: "Small travel activities/coloring books", checked: false }
@@ -144,7 +291,7 @@ let checklists = {
         { text: "Passports (valid 6+ months from April 2026)", checked: false },
         { text: "EU Plug adapters (Type C/F)", checked: false },
         { text: "Lightweight rain jackets (March/April weather)", checked: false },
-        { text: "Comfortable, sturdy walking shoes (cobblestones!)", checked: false },
+        { text: "Comfortable, sturdy walking shoes (calçada is slippery!)", checked: false },
         { text: "Swimsuits & Sunscreen (for Algarve pools/beach)", checked: false }
     ]
 };
@@ -152,6 +299,7 @@ let checklists = {
 const travelGuide = {
     knowBeforeYouGo: { title: 'Family Travel in Portugal', points: [
         { icon: 'baby', title: 'Kid-Friendly Culture', text: 'Portugal is exceptionally welcoming to children. It is completely normal for kids to be in restaurants later in the evening. Locals will often go out of their way to accommodate Aarit and Keev.' },
+        { icon: 'shield-check', title: 'The "Under 5" Law', text: 'By law in Portugal, pregnant women, the elderly, and families traveling with children under the age of 5 have priority access. Look for the priority lane at museums, castles, and even airport security. You get to skip the line!' },
         { icon: 'footprints', title: 'Navigating Cobblestones', text: 'Lisbon is famously hilly and paved with calçada (cobblestones). A sturdy, lightweight travel stroller is crucial, but a baby carrier is highly recommended for exploring castles, Chiado, and Sintra.' },
         { icon: 'salad', title: 'Food & Dining', text: 'Portuguese cuisine relies heavily on fresh, high-quality ingredients (olive oil, fresh fish, simple meats). You will easily find healthy options without artificial additives for the kids. "Sopa de legumes" (vegetable soup) is on almost every menu and is a healthy, kid-approved staple.' },
         { icon: 'car', title: 'Car Seats', text: 'By law, children under 12 or under 135cm must use an appropriate child seat. Ensure all transfers and rental cars are booked explicitly with a toddler seat for Keev and a booster for Aarit.' }
@@ -159,9 +307,9 @@ const travelGuide = {
 };
 
 const sectionTitles = {
-    'itinerary': 'Daily Itinerary',
+    'itinerary': 'Ultimate Trip Bible',
     'map': 'Interactive Route Map',
-    'bookings': 'Budget & Expenses',
+    'bookings': 'Bookings & Budget',
     'checklists': 'Preparation Checklists',
     'guide': 'Family Travel Guide'
 };
@@ -266,7 +414,7 @@ const renderDayContent = (dayIndex) => {
                 <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
                 <span>${dayData.location}</span>
             </div>
-            <h2 class="font-outfit text-4xl font-bold text-slate-800 tracking-tight">${dayData.title}</h2>
+            <h2 class="font-outfit text-4xl font-extrabold text-slate-800 tracking-tight">${dayData.title}</h2>
             <p class="text-slate-500 font-medium mt-2 text-lg">${dayData.dayOfWeek}, ${dayData.date}</p>
         </div>
         
@@ -284,29 +432,31 @@ const renderDayContent = (dayIndex) => {
 
                 let tipsHtml = '';
                 if (event.tips) {
-                    tipsHtml = `<div class="mt-3 space-y-2">` + 
+                    tipsHtml = `<div class="mt-4 space-y-2">` + 
                         event.tips.map(tip => `
-                        <div class="flex items-start bg-yellow-50 p-2.5 rounded-lg border border-yellow-100">
-                            <i data-lucide="${tip.icon}" class="w-4 h-4 text-yellow-600 mr-2 flex-shrink-0 mt-0.5"></i>
-                            <span class="text-xs text-yellow-800 font-medium leading-relaxed">${tip.text}</span>
+                        <div class="flex items-start bg-yellow-50/80 p-3 rounded-xl border border-yellow-200/60">
+                            <div class="bg-yellow-100 p-1.5 rounded-lg mr-3 flex-shrink-0 mt-0.5">
+                                <i data-lucide="${tip.icon}" class="w-4 h-4 text-yellow-700"></i>
+                            </div>
+                            <span class="text-sm text-yellow-900 font-medium leading-relaxed">${tip.text}</span>
                         </div>
                         `).join('') + 
                     `</div>`;
                 }
 
                 return `
-                <div class="relative flex items-start group">
+                <div class="relative flex items-start group w-full">
                     <div class="absolute left-6 -translate-x-1/2 flex items-center justify-center w-12 h-12 rounded-full bg-white border-4 border-slate-50 shadow-sm z-10 transition-transform group-hover:scale-110">
                         <div class="w-8 h-8 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center">
                             <i data-lucide="${event.icon}" class="w-4 h-4"></i>
                         </div>
                     </div>
                     
-                    <div class="ml-16 w-full">
-                        <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden">
+                    <div class="ml-16 w-full pr-2 md:pr-0">
+                        <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow relative overflow-hidden">
                             
                             <div class="flex items-center justify-between mb-3">
-                                <span class="text-xs font-bold text-teal-600 uppercase tracking-widest bg-teal-50 px-2 py-1 rounded">${event.time}</span>
+                                <span class="text-xs font-bold text-teal-600 uppercase tracking-widest bg-teal-50 px-2.5 py-1 rounded-md border border-teal-100">${event.time}</span>
                             </div>
                             
                             <h3 class="text-xl font-outfit font-bold text-slate-800 mb-2">${event.title}</h3>
@@ -316,15 +466,15 @@ const renderDayContent = (dayIndex) => {
                             ${event.activityOptions ? `
                                 <div class="mt-4 grid gap-3 text-left">
                                     ${event.activityOptions.map(a => `
-                                        <div class="p-3.5 rounded-xl ${a.isMustDo ? 'bg-teal-50/50 border-teal-200' : 'bg-slate-50 border-slate-200'} border">
-                                            <div class="flex justify-between items-start mb-1.5">
+                                        <div class="p-4 rounded-xl ${a.isMustDo ? 'bg-teal-50/50 border-teal-200' : 'bg-slate-50 border-slate-200'} border">
+                                            <div class="flex justify-between items-start mb-2">
                                                 <span class="font-bold ${a.isMustDo ? 'text-teal-900' : 'text-slate-800'} text-sm flex items-center">
-                                                    ${a.isMustDo ? '<i data-lucide="star" class="w-4 h-4 mr-1.5 text-teal-600 fill-teal-600"></i>' : '<i data-lucide="leaf" class="w-4 h-4 mr-1.5 text-slate-400"></i>'}
+                                                    ${a.isMustDo ? '<i data-lucide="star" class="w-4 h-4 mr-2 text-teal-600 fill-teal-600"></i>' : '<i data-lucide="leaf" class="w-4 h-4 mr-2 text-slate-400"></i>'}
                                                     ${a.name}
                                                 </span>
-                                                <span class="text-[10px] ${a.isMustDo ? 'text-teal-700 bg-teal-100/50 border-teal-200' : 'text-slate-500 bg-white border-slate-200'} font-bold uppercase tracking-wider px-2 py-0.5 rounded border">${a.type}</span>
+                                                <span class="text-[10px] ${a.isMustDo ? 'text-teal-700 bg-teal-100/50 border-teal-200' : 'text-slate-500 bg-white border-slate-200'} font-bold uppercase tracking-wider px-2 py-1 rounded border">${a.type}</span>
                                             </div>
-                                            <p class="text-xs ${a.isMustDo ? 'text-teal-800' : 'text-slate-600'} leading-relaxed">${a.description}</p>
+                                            <p class="text-sm ${a.isMustDo ? 'text-teal-800/90' : 'text-slate-600'} leading-relaxed">${a.description}</p>
                                         </div>
                                     `).join('')}
                                 </div>
@@ -333,12 +483,12 @@ const renderDayContent = (dayIndex) => {
                             ${event.diningOptions ? `
                                 <div class="mt-4 grid gap-3 text-left">
                                     ${event.diningOptions.map(d => `
-                                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                                            <div class="flex justify-between items-start mb-1">
+                                        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                                            <div class="flex justify-between items-start mb-1.5">
                                                 <span class="font-bold text-slate-800 text-sm">${d.name}</span>
-                                                <span class="text-[10px] text-slate-400 font-medium uppercase tracking-wider bg-white px-2 py-0.5 rounded border border-slate-100">${d.vibe}</span>
+                                                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider bg-white px-2 py-0.5 rounded border border-slate-200">${d.vibe}</span>
                                             </div>
-                                            <p class="text-xs text-slate-500">${d.notes}</p>
+                                            <p class="text-sm text-slate-600 leading-relaxed">${d.notes}</p>
                                         </div>
                                     `).join('')}
                                 </div>
@@ -347,7 +497,7 @@ const renderDayContent = (dayIndex) => {
                             ${tipsHtml}
                             ${tagsHtml}
                             
-                            <div class="mt-4 pt-4 border-t border-slate-50 text-left">
+                            <div class="mt-5 pt-4 border-t border-slate-100 text-left">
                                 <button class="text-xs font-bold text-slate-400 hover:text-teal-600 flex items-center transition-colors toggle-notes" data-key="${key}">
                                     <i data-lucide="pen-line" class="w-3.5 h-3.5 mr-1.5"></i>
                                     ${note ? 'Edit Note' : 'Add Note'}
@@ -455,8 +605,140 @@ const renderMap = () => {
 const renderBookings = () => {
     const content = document.getElementById('bookings-section');
     if (!content) return;
+    
+    const flightsHtml = `
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-8 mb-8">
+            <h2 class="text-2xl font-outfit font-bold text-slate-800 mb-6 flex items-center"><i data-lucide="plane" class="w-6 h-6 mr-3 text-teal-600"></i>Flight Information</h2>
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                <div><span class="text-sm text-slate-500 block">Airline</span><strong class="text-slate-800">${reservationData.flights.airline}</strong></div>
+                <div class="md:text-right"><span class="text-sm text-slate-500 block">Booking Reference (PNR)</span><strong class="text-xl font-mono text-teal-700">${reservationData.flights.pnr}</strong></div>
+            </div>
+            
+            <h4 class="font-bold text-slate-800 mb-3 text-sm uppercase tracking-wider">Passengers & Tickets</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+                ${reservationData.flights.passengers.map(p => `
+                    <div class="bg-white border border-slate-200 p-3 rounded-lg shadow-sm">
+                        <span class="block font-bold text-slate-800 text-sm">${p.name}</span>
+                        <span class="block text-xs text-slate-500 font-mono mt-1">Ticket: ${p.ticket}</span>
+                    </div>
+                `).join('')}
+            </div>
+
+            <h4 class="font-bold text-slate-800 mb-3 text-sm uppercase tracking-wider">Flight Schedule</h4>
+            <div class="space-y-3">
+                ${reservationData.flights.schedule.map(s => `
+                    <div class="flex flex-col md:flex-row md:items-center justify-between bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+                        <div>
+                            <span class="inline-block px-2 py-0.5 bg-teal-50 text-teal-700 text-[10px] font-bold rounded uppercase tracking-wider mb-1.5">${s.label || 'Departure'}</span>
+                            <span class="block text-xs font-bold text-slate-500">${s.date}</span>
+                            <strong class="block text-lg text-slate-800 mt-0.5">${s.route}</strong>
+                        </div>
+                        <div class="mt-3 md:mt-0 md:text-right">
+                            <span class="block text-sm font-bold text-slate-600">Flight: ${s.flight}</span>
+                            <span class="block text-teal-600 font-bold mt-1">${s.time}</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+
+    const hotelsHtml = `
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-8 mb-8">
+            <h2 class="text-2xl font-outfit font-bold text-slate-800 mb-6 flex items-center"><i data-lucide="building" class="w-6 h-6 mr-3 text-teal-600"></i>Hotel Reservations</h2>
+            <div class="space-y-6">
+                ${reservationData.hotels.map((h, i) => `
+                    <div class="border border-slate-200 rounded-2xl p-5 relative overflow-hidden shadow-sm">
+                        <div class="absolute top-0 left-0 w-1.5 h-full bg-teal-500"></div>
+                        <div class="flex flex-col md:flex-row justify-between md:items-start mb-4 gap-3">
+                            <div>
+                                <span class="text-xs font-bold text-teal-600 uppercase tracking-widest bg-teal-50 px-2 py-1 rounded">${i + 1}. ${h.location}</span>
+                                <h3 class="text-xl font-bold text-slate-800 mt-2">${h.name}</h3>
+                                <p class="text-sm font-medium text-slate-500 mt-1">${h.dates}</p>
+                            </div>
+                            <div class="md:text-right bg-slate-50 px-3 py-2 rounded-lg border border-slate-100 self-start">
+                                <span class="block text-xs text-slate-500 mb-0.5">Confirmation #</span>
+                                <strong class="text-sm font-mono text-slate-800">${h.bookingId}</strong>
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-4 text-sm bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                            <div>
+                                <span class="block text-slate-500 mb-1 text-xs uppercase tracking-wider font-bold">Room Type</span>
+                                <strong class="text-slate-800">${h.roomType}</strong>
+                            </div>
+                            <div>
+                                <span class="block text-slate-500 mb-1 text-xs uppercase tracking-wider font-bold">Schedule</span>
+                                <strong class="text-slate-800">In: ${h.checkIn} | Out: ${h.checkOut}</strong>
+                            </div>
+                        </div>
+                        ${h.benefits ? `<div class="mt-4 p-3 bg-yellow-50 rounded-xl border border-yellow-200/60 text-sm"><strong class="text-yellow-800">Added Benefits:</strong> <span class="text-yellow-900/80">${h.benefits}</span></div>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+
+    const transportHtml = `
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-8 mb-8">
+            <h2 class="text-2xl font-outfit font-bold text-slate-800 mb-6 flex items-center"><i data-lucide="car" class="w-6 h-6 mr-3 text-teal-600"></i>Ground Transportation</h2>
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
+                <h3 class="text-lg font-bold text-slate-800 mb-4">${reservationData.transport.type}</h3>
+                <div class="grid md:grid-cols-2 gap-6 mb-5">
+                    <div class="bg-white p-3 rounded-xl border border-slate-100">
+                        <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Pick-up</span>
+                        <strong class="text-sm text-slate-800 block">${reservationData.transport.pickup}</strong>
+                    </div>
+                    <div class="bg-white p-3 rounded-xl border border-slate-100">
+                        <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Drop-off</span>
+                        <strong class="text-sm text-slate-800 block">${reservationData.transport.dropoff}</strong>
+                    </div>
+                </div>
+                <div class="p-3.5 bg-white rounded-xl border border-slate-200 text-sm flex items-start">
+                    <i data-lucide="users" class="w-5 h-5 text-teal-600 mr-2 flex-shrink-0 mt-0.5"></i>
+                    <div>
+                        <span class="font-bold text-slate-800 block mb-0.5">Vehicle Plan:</span> 
+                        <span class="text-slate-600 leading-relaxed">${reservationData.transport.plan}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const bookingLinksHtml = `
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-8 mb-8">
+            <h2 class="text-2xl font-outfit font-bold text-slate-800 mb-6 flex items-center"><i data-lucide="bookmark" class="w-6 h-6 mr-3 text-teal-600"></i>Activity & Restaurant Directory</h2>
+            
+            <h4 class="font-bold text-slate-800 mb-4 text-sm uppercase tracking-wider border-b border-slate-100 pb-2">Dining Reservations</h4>
+            <div class="space-y-3 mb-8">
+                ${reservationData.bookingLinks.map(link => `
+                    <div class="flex flex-col md:flex-row justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-teal-300 transition-colors">
+                        <div class="mb-3 md:mb-0">
+                            <span class="text-xs font-bold text-teal-600 uppercase tracking-wider">${link.day}</span>
+                            <strong class="block text-slate-800 text-lg mt-0.5">${link.name}</strong>
+                            ${link.note ? `<span class="block text-xs text-red-700 mt-2 bg-red-50 px-2 py-1 rounded inline-block border border-red-100">${link.note}</span>` : ''}
+                        </div>
+                        <div class="md:text-right md:max-w-[250px] flex flex-col justify-center">
+                            <span class="block text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Booking Method</span>
+                            <span class="block text-sm text-slate-700 font-medium">${link.method}</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+
+            <h4 class="font-bold text-slate-800 mb-4 text-sm uppercase tracking-wider border-b border-slate-100 pb-2">Activity & Tour Log</h4>
+            <div class="grid md:grid-cols-2 gap-4">
+                ${reservationData.activities.map(act => `
+                    <div class="p-4 border border-slate-200 bg-slate-50 rounded-xl">
+                        <strong class="block text-slate-800 mb-1">${act.name}</strong>
+                        <span class="text-sm text-slate-600">${act.details}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+
     const categories = [
-        { key: 'flights', label: 'Flights (NYC to LIS/FAO)', estimate: 2400 },
+        { key: 'flights', label: 'Flights (EWR to LIS/FAO)', estimate: 2400 },
         { key: 'lodgingLisbon', label: 'Martinhal Chiado (5 Nights)', estimate: 2000 },
         { key: 'lodgingAlgarve', label: 'Vila Vita Parc (4 Nights)', estimate: 2200 },
         { key: 'rentalCar', label: 'Rental Car + Car Seats', estimate: 450 },
@@ -470,7 +752,7 @@ const renderBookings = () => {
         return `
         <div class="flex items-center justify-between py-4 border-b border-slate-100 last:border-0 group">
             <div class="flex items-center">
-                <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center mr-4 text-slate-400 group-hover:bg-teal-50 group-hover:text-teal-600 transition-colors">
+                <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center mr-3 md:mr-4 text-slate-400 group-hover:bg-teal-50 group-hover:text-teal-600 transition-colors">
                     <i data-lucide="circle-dollar-sign" class="w-4 h-4"></i>
                 </div>
                 <div>
@@ -478,21 +760,21 @@ const renderBookings = () => {
                     <span class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Est: $${c.estimate}</span>
                 </div>
             </div>
-            <div class="relative">
+            <div class="relative flex-shrink-0 ml-2">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">$</span>
-                <input type="number" data-key="${c.key}" value="${val}" class="w-28 pl-7 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all expense-input" placeholder="0">
+                <input type="number" data-key="${c.key}" value="${val}" class="w-24 md:w-28 pl-7 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all expense-input" placeholder="0">
             </div>
         </div>`;
     }).join('');
 
-    content.innerHTML = `
-        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 max-w-2xl mx-auto">
+    const budgetHtml = `
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-8">
             <div class="flex items-center justify-between mb-8">
                 <div>
                     <h2 class="text-2xl font-outfit font-bold text-slate-800">Trip Budget</h2>
                     <p class="text-sm text-slate-500 mt-1">Track actual costs against estimates</p>
                 </div>
-                <div class="w-12 h-12 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center">
+                <div class="w-12 h-12 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center hidden md:flex">
                     <i data-lucide="calculator" class="w-6 h-6"></i>
                 </div>
             </div>
@@ -510,7 +792,18 @@ const renderBookings = () => {
                     <i data-lucide="wallet" class="w-5 h-5 text-teal-400"></i>
                 </div>
             </div>
-        </div>`;
+        </div>
+    `;
+
+    content.innerHTML = `
+        <div class="max-w-4xl mx-auto">
+            ${flightsHtml}
+            ${hotelsHtml}
+            ${transportHtml}
+            ${bookingLinksHtml}
+            ${budgetHtml}
+        </div>
+    `;
 
     content.querySelectorAll('.expense-input').forEach(input => {
         input.onchange = () => {
@@ -595,13 +888,13 @@ const renderGuide = () => {
                     <i data-lucide="book-heart" class="w-8 h-8"></i>
                 </div>
                 <h2 class="text-3xl font-outfit font-bold text-slate-800">Family Travel Guide</h2>
-                <p class="text-slate-500 mt-2 font-medium">Tips for navigating Portugal with a 3 & 5 year old</p>
+                <p class="text-slate-500 mt-2 font-medium">Tactical tips for navigating Portugal with a 3 & 5 year old</p>
             </div>
             
-            <div class="space-y-8">
+            <div class="space-y-6">
                 ${travelGuide.knowBeforeYouGo.points.map(p => `
-                    <div class="flex items-start space-x-5 p-5 bg-slate-50 rounded-2xl border border-slate-100">
-                        <div class="bg-white p-3 rounded-xl text-teal-600 shadow-sm border border-slate-100 flex-shrink-0">
+                    <div class="flex items-start space-x-5 p-5 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="bg-teal-50 p-3 rounded-xl text-teal-600 shadow-sm border border-teal-100 flex-shrink-0">
                             <i data-lucide="${p.icon}" class="w-6 h-6"></i>
                         </div>
                         <div>
