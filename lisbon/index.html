@@ -16,7 +16,30 @@
 </head>
 
 <body class="antialiased text-slate-900 bg-slate-50">
-    <div id="app" class="relative min-h-screen flex">
+    <!-- Auth Overlay -->
+    <div id="auth-overlay" class="fixed inset-0 z-[100] bg-slate-900 flex items-center justify-center p-4 transition-opacity duration-500">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-10 text-center transform transition-all duration-500 scale-100">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-teal-50 text-teal-600 mb-6">
+                <i data-lucide="lock" class="w-10 h-10"></i>
+            </div>
+            <h1 class="text-3xl font-outfit font-extrabold text-slate-800 mb-2">Agarwal Odyssey</h1>
+            <p class="text-slate-500 mb-8 font-medium">Please sign in with a whitelisted Google account to access the trip details.</p>
+            
+            <button id="google-signin-btn" class="w-full flex items-center justify-center space-x-3 bg-white border-2 border-slate-200 hover:border-teal-500 hover:bg-teal-50 text-slate-700 px-6 py-4 rounded-2xl font-bold transition-all shadow-sm group">
+                <svg class="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                </svg>
+                <span>Sign in with Google</span>
+            </button>
+            
+            <p id="auth-error" class="text-red-500 text-sm font-bold mt-6 hidden"></p>
+        </div>
+    </div>
+
+    <div id="app" class="relative min-h-screen flex hidden">
         
         <!-- Mobile Sidebar Overlay -->
         <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/60 z-40 opacity-0 pointer-events-none transition-opacity duration-300 md:hidden"></div>
@@ -64,13 +87,19 @@
                 </div>
             </nav>
             
-            <footer class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-                <button id="show-user-id" class="p-2 text-slate-400 hover:text-teal-600 transition-colors" title="Developer Info">
-                    <i data-lucide="info" class="w-4 h-4"></i>
-                </button>
-                <button id="share-trip-btn" class="flex items-center space-x-2 bg-white border border-slate-200 hover:border-teal-300 hover:bg-teal-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm">
-                    <i data-lucide="share-2" class="w-4 h-4 text-teal-600"></i>
-                    <span>Share Trip</span>
+            <footer class="p-4 border-t border-slate-100 bg-slate-50 flex flex-col space-y-3">
+                <div class="flex items-center justify-between w-full">
+                    <button id="show-user-id" class="p-2 text-slate-400 hover:text-teal-600 transition-colors" title="Developer Info">
+                        <i data-lucide="info" class="w-4 h-4"></i>
+                    </button>
+                    <button id="share-trip-btn" class="flex items-center space-x-2 bg-white border border-slate-200 hover:border-teal-300 hover:bg-teal-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm">
+                        <i data-lucide="share-2" class="w-4 h-4 text-teal-600"></i>
+                        <span>Share Trip</span>
+                    </button>
+                </div>
+                <button id="logout-btn" class="w-full py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all flex items-center justify-center space-x-2">
+                    <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                    <span>Sign Out</span>
                 </button>
             </footer>
         </aside>
