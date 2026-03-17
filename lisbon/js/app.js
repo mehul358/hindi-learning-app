@@ -1,6 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+// --- Config & Auth ---
+const WHITELIST = ['mehulagarwal@gmail.com', 'nehal.kedia@gmail.com'];
 
 // --- Reservation Data Hub ---
 const reservationData = {
@@ -984,20 +987,43 @@ const setupFirebase = async () => {
             db = getFirestore(app);
             auth = getAuth(app);
 
-            if (typeof window.__initial_auth_token !== 'undefined' && window.__initial_auth_token) {
-                await signInWithCustomToken(auth, window.__initial_auth_token).catch(() => signInAnonymously(auth));
-            } else {
-                await signInAnonymously(auth);
-            }
+            const provider = new GoogleAuthProvider();
+            
+            document.getElementById('google-signin-btn').onclick = async () => {
+                try {
+                    const result = await signInWithPopup(auth, provider);
+                    const user = result.user;
+                    if (!WHITELIST.includes(user.email)) {
+                        await signOut(auth);
+                        const errorEl = document.getElementById('auth-error');
+                        errorEl.textContent = "Access Denied: Email not whitelisted.";
+                        errorEl.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error("Login Error:", error);
+                    const errorEl = document.getElementById('auth-error');
+                    errorEl.textContent = "Login failed. Please try again.";
+                    errorEl.classList.remove('hidden');
+                }
+            };
+
+            document.getElementById('logout-btn').onclick = async () => {
+                await signOut(auth);
+                window.location.reload();
+            };
 
             onAuthStateChanged(auth, (user) => {
-                if (user) {
+                if (user && WHITELIST.includes(user.email)) {
                     userId = user.uid;
+                    document.getElementById('auth-overlay').classList.add('opacity-0', 'pointer-events-none');
+                    document.getElementById('app').classList.remove('hidden');
                     const display = document.getElementById('user-id-display');
-                    if (display) display.textContent = `UID: ${userId.substring(0,8)}...`;
+                    if (display) display.textContent = `User: ${user.email}`;
                     startTripStateListener();
                 } else {
                     userId = null;
+                    document.getElementById('auth-overlay').classList.remove('opacity-0', 'pointer-events-none');
+                    document.getElementById('app').classList.add('hidden');
                 }
             });
         }
