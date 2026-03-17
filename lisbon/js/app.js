@@ -2,8 +2,38 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-// --- Config & Auth ---
+// Configuration
+const firebaseConfig = JSON.parse(__firebase_config);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-portugal-trip';
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// Auth Whitelist
 const WHITELIST = ['mehulagarwal@gmail.com', 'nehal.kedia@gmail.com'];
+
+// Core State
+let userId = null;
+let currentDay = 0;
+let currentSection = 'itinerary';
+let hasInitialDataLoaded = false;
+let tripStateUnsubscribe = null;
+let eventNotes = {};
+let userExpenses = {};
+
+// Map State
+let mapInstance = null;
+let mapMarkers = [];
+
+// UI Text Mapping
+const sectionTitles = {
+    'itinerary': 'Ultimate Trip Bible',
+    'map': 'Interactive Route Map',
+    'bookings': 'Bookings & Budget',
+    'checklists': 'Preparation Checklists',
+    'guide': 'Family Travel Guide'
+};
 
 // --- Reservation Data Hub ---
 const reservationData = {
@@ -131,7 +161,7 @@ const itineraryData = [
         ], lat: 38.6916, lng: -9.2160, tags: ['Stroller Friendly', 'Tactile'] },
         { time: "12:30 PM", type: 'dining', icon: 'coffee', title: "Lunch: Pastéis de Belém", description: "The birthplace of Portugal's famous custard tarts. Also serves savory lunch items.", lat: 38.6975, lng: -9.2032,
           tips: [
-              { icon: 'alert-triangle', text: 'Watch Out: Do NOT stand in the massive takeout line outside. Walk past it, go delete it, inside the building, and sit in the labyrinth of cafe rooms for much faster table service.' }
+              { icon: 'alert-triangle', text: 'Watch Out: Do NOT stand in the massive takeout line outside. Walk past it, go deep inside the building, and sit in the labyrinth of cafe rooms for much faster table service.' }
           ]
         },
         { time: "2:30 PM", type: 'activity', icon: 'crown', title: "Afternoon Session: Fairytale Transport", activityOptions: [
@@ -316,21 +346,6 @@ const sectionTitles = {
     'checklists': 'Preparation Checklists',
     'guide': 'Family Travel Guide'
 };
-
-// --- Core State ---
-let userId = null;
-let currentDay = 0;
-let currentSection = 'itinerary';
-let hasInitialDataLoaded = false;
-let tripStateUnsubscribe = null;
-let eventNotes = {};
-let userExpenses = {};
-let mapInstance = null;
-let mapMarkers = [];
-let db = null;
-let auth = null;
-
-const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-portugal-trip';
 
 // --- Helpers ---
 const generateTripId = () => 'trip-' + Math.random().toString(36).substr(2, 10);
@@ -998,6 +1013,10 @@ const setupFirebase = async () => {
                         const errorEl = document.getElementById('auth-error');
                         errorEl.textContent = "Access Denied: Email not whitelisted.";
                         errorEl.classList.remove('hidden');
+                    } else {
+                         // User is whitelisted, update display
+                        const display = document.getElementById('user-id-display');
+                        if (display) display.textContent = `User: ${user.email}`;
                     }
                 } catch (error) {
                     console.error("Login Error:", error);
@@ -1009,7 +1028,8 @@ const setupFirebase = async () => {
 
             document.getElementById('logout-btn').onclick = async () => {
                 await signOut(auth);
-                window.location.reload();
+                // Reload to show the auth overlay again
+                window.location.reload(); 
             };
 
             onAuthStateChanged(auth, (user) => {
@@ -1024,7 +1044,11 @@ const setupFirebase = async () => {
                     userId = null;
                     document.getElementById('auth-overlay').classList.remove('opacity-0', 'pointer-events-none');
                     document.getElementById('app').classList.add('hidden');
+                    // Clear any previous error message on sign out or invalid user
+                    const errorEl = document.getElementById('auth-error');
+                    if (errorEl) errorEl.classList.add('hidden');
                 }
+                createIcons(); // Ensure icons are created after auth state changes
             });
         }
     } catch (e) { console.warn("Firebase Setup Failed:", e); }
