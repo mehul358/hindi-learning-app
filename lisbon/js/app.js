@@ -1,6 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
 // Configuration - Robust injection check
 let firebaseConfig = null;
@@ -20,24 +19,17 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-portugal-tri
 
 let app = null;
 let db = null;
-let auth = null;
 
 if (firebaseConfig && firebaseConfig.apiKey) {
     try {
         app = initializeApp(firebaseConfig);
         db = getFirestore(app);
-        auth = getAuth(app);
     } catch (e) {
         console.error("Firebase Initialization failed", e);
     }
 }
 
-// Auth Whitelist
-const WHITELIST = ['mehulagarwal@gmail.com', 'nehal.kedia@gmail.com'];
-const isWhitelisted = (email) => email && WHITELIST.map(e => e.toLowerCase()).includes(email.toLowerCase());
-
 // Core State
-let userId = null;
 let currentDay = 0;
 let currentSection = 'itinerary';
 let hasInitialDataLoaded = false;
@@ -966,7 +958,7 @@ const switchSection = (sectionId, dayIndex = 0, shouldSave = true) => {
 
 // --- Firebase Sync ---
 const saveTripState = async () => {
-    if (!userId || !db) return;
+    if (!db) return;
     const docRef = doc(db, "artifacts", appId, "public", "data", "trips", tripId);
     try {
         await setDoc(docRef, {
@@ -981,7 +973,7 @@ const saveTripState = async () => {
 };
 
 const startTripStateListener = () => {
-    if (!userId || !db) return;
+    if (!db) return;
     const docRef = doc(db, "artifacts", appId, "public", "data", "trips", tripId);
     
     tripStateUnsubscribe = onSnapshot(docRef, (docSnap) => {
@@ -1008,82 +1000,9 @@ const startTripStateListener = () => {
 };
 
 const setupFirebase = async () => {
-    const errorEl = document.getElementById('auth-error');
-    if (!auth) {
-        console.error("Firebase Auth not initialized - check config");
-        if (errorEl) {
-            errorEl.textContent = "Database configuration is missing. Auth disabled.";
-            errorEl.classList.remove('hidden');
-        }
-        // Even without auth, show the app in "read-only/local" mode if you want, 
-        // but the requirement says "whitelisted account to access".
-        return;
-    }
-
-    const provider = new GoogleAuthProvider();
-    
-    const signInBtn = document.getElementById('google-signin-btn');
-    if (signInBtn) {
-        signInBtn.onclick = async () => {
-            if (errorEl) errorEl.classList.add('hidden');
-            try {
-                console.log("Opening Google Sign-In Popup...");
-                const result = await signInWithPopup(auth, provider);
-                const user = result.user;
-                console.log("User signed in:", user.email);
-                
-                if (!isWhitelisted(user.email)) {
-                    console.warn("User not in whitelist:", user.email);
-                    await signOut(auth);
-                    if (errorEl) {
-                        errorEl.textContent = `Access Denied: ${user.email} is not whitelisted.`;
-                        errorEl.classList.remove('hidden');
-                    }
-                }
-            } catch (error) {
-                console.error("Login Error:", error);
-                if (errorEl) {
-                    errorEl.textContent = "Sign-in failed. Check your connection or browser settings.";
-                    errorEl.classList.remove('hidden');
-                }
-            }
-        };
-    }
-
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.onclick = async () => {
-            try {
-                await signOut(auth);
-                window.location.reload(); 
-            } catch (e) { console.error("Sign out error", e); }
-        };
-    }
-
-    onAuthStateChanged(auth, (user) => {
-        const overlay = document.getElementById('auth-overlay');
-        const appEl = document.getElementById('app');
-        const display = document.getElementById('user-id-display');
-
-        if (user && isWhitelisted(user.email)) {
-            console.log("Auth session active:", user.email);
-            userId = user.uid;
-            if (overlay) overlay.classList.add('opacity-0', 'pointer-events-none');
-            if (appEl) appEl.classList.remove('hidden');
-            if (display) {
-                display.textContent = `User: ${user.email}`;
-                display.classList.remove('hidden');
-            }
-            startTripStateListener();
-        } else {
-            console.log("No active whitelisted session.");
-            userId = null;
-            if (overlay) overlay.classList.remove('opacity-0', 'pointer-events-none');
-            if (appEl) appEl.classList.add('hidden');
-            if (display) display.classList.add('hidden');
-        }
-        createIcons();
-    });
+    // Auth functionality removed as requested
+    console.log("Starting in Public/Local Mode (No Auth Required)");
+    startTripStateListener();
 };
 
 // --- Main Init ---
