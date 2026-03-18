@@ -1002,20 +1002,45 @@ const switchSection = (sectionId, dayIndex = 0, shouldSave = true) => {
     if (shouldSave) saveTripState();
 };
 
-// --- Firebase Sync ---
+// --- Persistence & Firebase Sync ---
 const saveTripState = async () => {
+    const state = {
+        currentDay,
+        eventNotes,
+        userExpenses,
+        checklists: JSON.parse(JSON.stringify(checklists)),
+        lastUpdated: new Date().toISOString()
+    };
+    
+    // 1. Immediate save to LocalStorage (Always works, even without config)
+    localStorage.setItem(`trip_state_${tripId}`, JSON.stringify(state));
+
+    // 2. Sync to Cloud Firestore if configured
     if (!db) return;
     const docRef = doc(db, "artifacts", appId, "public", "data", "trips", tripId);
     try {
-        await setDoc(docRef, {
-            currentDay,
-            eventNotes,
-            userExpenses,
-            checklists: JSON.parse(JSON.stringify(checklists)),
-            lastUpdated: new Date().toISOString()
-        }, { merge: true });
+        await setDoc(docRef, state, { merge: true });
         showToast();
-    } catch (e) { console.error("Save Error:", e); }
+    } catch (e) { console.error("Cloud Save Error:", e); }
+};
+
+const loadLocalState = () => {
+    const saved = localStorage.getItem(`trip_state_${tripId}`);
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            if (data.currentDay !== undefined) currentDay = data.currentDay;
+            if (data.eventNotes) eventNotes = data.eventNotes;
+            if (data.userExpenses) userExpenses = data.userExpenses;
+            if (data.checklists) {
+                Object.keys(checklists).forEach(k => {
+                    if (data.checklists[k]) checklists[k] = data.checklists[k];
+                });
+            }
+            return true;
+        } catch (e) { console.error("Local load error", e); }
+    }
+    return false;
 };
 
 const startTripStateListener = () => {
@@ -1023,8 +1048,9 @@ const startTripStateListener = () => {
     const docRef = doc(db, "artifacts", appId, "public", "data", "trips", tripId);
     
     tripStateUnsubscribe = onSnapshot(docRef, (docSnap) => {
-        let data = docSnap.exists() ? docSnap.data() : {};
+        if (!docSnap.exists()) return;
         
+        let data = docSnap.data();
         if (data.currentDay !== undefined && !hasInitialDataLoaded) currentDay = data.currentDay;
         if (data.eventNotes) eventNotes = data.eventNotes;
         if (data.userExpenses) userExpenses = data.userExpenses;
@@ -1040,14 +1066,15 @@ const startTripStateListener = () => {
             renderActiveSection();
             hasInitialDataLoaded = true;
         } else {
+            // Re-render specific screens if they are currently visible
             if (currentSection === 'checklists') renderChecklists();
+            if (currentSection === 'bookings') renderBookings();
         }
     }, (error) => console.error("Firestore Listen Error:", error));
 };
 
 const setupFirebase = async () => {
-    // Auth functionality removed as requested
-    console.log("Starting in Public/Local Mode (No Auth Required)");
+    console.log("Persistence: Local mode active. Cloud sync pending config.");
     startTripStateListener();
 };
 
@@ -1055,7 +1082,10 @@ const setupFirebase = async () => {
 const initApp = () => {
     console.log("Lisbon Trip App Initializing...");
 
-    // Event Listeners for Nav
+    // 1. Load from LocalStorage first for instant results
+    loadLocalState();
+
+    // 2. Set up Event Listeners
     const openSidebarBtn = document.getElementById('open-sidebar');
     if (openSidebarBtn) {
         openSidebarBtn.onclick = () => {
@@ -1144,11 +1174,11 @@ const initApp = () => {
         };
     }
 
-    // Initial Static Render
+    // 3. Initial Static Render
     renderSidebarNav();
     renderActiveSection();
     
-    // Sync with Firebase
+    // 4. Sync with Firebase Cloud
     setupFirebase();
 };
 

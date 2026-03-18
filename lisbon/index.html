@@ -14,6 +14,20 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <link rel="stylesheet" href="css/style.css">
+    <script>
+        // This is where you paste your Firebase configuration object.
+        // Replace the placeholder with your actual firebaseConfig from the Firebase Console.
+        window.__firebase_config = {
+            apiKey: "AIzaSyDwvfb9E4GFyrLe3HcqS8Gd2o9n3yKlz4g",
+            authDomain: "hindi-learning-app-29727-1bef4.firebaseapp.com",
+            projectId: "hindi-learning-app-29727-1bef4",
+            storageBucket: "hindi-learning-app-29727-1bef4.firebasestorage.app",
+            messagingSenderId: "976666647931",
+            appId: "1:976666647931:web:2937e0cd466b9afac671de"
+        };
+        // Optionally, if you have a specific app ID for your Firestore collection, you can define it here:
+        // window.__app_id = 'your-custom-app-id';
+    </script>
 </head>
 
 <body class="antialiased text-slate-900 bg-slate-50">
@@ -56,7 +70,6 @@
                 </div>
                 <h1 class="text-xl font-outfit font-extrabold tracking-tight text-slate-800">Agarwal Odyssey</h1>
                 <p class="text-sm font-semibold text-teal-600 mt-1">10th Anniversary Trip</p>
-                <p class="text-xs text-slate-500 mt-1 font-medium">Aarit (5) & Keev (3)</p>
                 <p id="user-id-display" class="text-[10px] text-slate-400 mt-3 break-all bg-slate-50 p-1.5 rounded border border-slate-100 hidden">Loading...</p>
             </div>
             
