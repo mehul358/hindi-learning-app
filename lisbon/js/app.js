@@ -91,6 +91,19 @@ const reservationData = {
         dropoff: "Saturday, April 4, 2026 at 09:00 AM (Faro Airport - FAO)",
         plan: "Skoda Kamiq or similar (Automatic). Includes 1 Child Seat, 1 Booster Seat, and Toll Transponder. Ref: BFH972"
     },
+    sintraDayTrip: {
+        type: "Private Day Trip (MyDaytrip)",
+        bookingRef: "3K7RFY5D",
+        date: "Monday, March 30, 2026",
+        price: "€200 (Prepaid)",
+        vehicle: "1x MPV (Compact, e.g., Volkswagen Touran)",
+        passengers: "4 (including 2 children with car seats)",
+        schedule: "08:30 AM (Pick-up) → 02:05 PM (Est. Drop-off)",
+        route: "Lisbon → Queluz Palace (15m stop) → Sintra (4h stop) → Lisbon",
+        pickup: "Martinhal Lisbon Chiado Luxury Hotel & Apartments (Lobby)",
+        dropoff: "Martinhal Lisbon Chiado Luxury Hotel & Apartments",
+        contact: "daytrip@daytrip.com | +1 628 288 2020"
+    },
     bookingLinks: [
         { day: "Day 1 (Mar 26)", name: "Cervejaria Trindade (Dinner)", method: "Official Website or +351 213 423 506", note: "Excellent for your first night; very close to Martinhal." },
         { day: "Day 2 (Mar 27)", name: "Ofício (Lunch)", method: "TheFork or +351 910 456 440", note: "Highly popular. Book the 12:30 PM slot if available to stay on schedule for the Science Museum." },
@@ -104,7 +117,7 @@ const reservationData = {
         { day: "Day 9 (Apr 3)", name: "Austa (Lunch)", method: "Official Website or WhatsApp +351 965 896 278", note: "Children under 7 only permitted for lunch/brunch." }
     ],
     activities: [
-        { name: "Sintra Private Driver (Mar 30)", details: "Sintra Magik or Daytrip" },
+        { name: "Sintra Private Day Trip (Mar 30)", details: "MyDaytrip - Ref: 3K7RFY5D" },
         { name: "Tuk-Tuk Tour (Mar 27)", details: "Eco Tuk Tours" },
         { name: "Benagil Cave Tour (Apr 1)", details: "CarvoeiroCaves (Explicitly provides toddler life jackets)" },
         { name: "Tile Painting (Mar 28)", details: "Art of Azulejo (Email or book via Fever)" },
@@ -202,25 +215,26 @@ const itineraryData = [
         { time: "6:30 PM", type: 'dining', icon: 'utensils-crossed', title: "Dinner: Pizzeria ZeroZero", description: "Located in Príncipe Real. Famous for its fantastic outdoor garden patio where kids have space to breathe while you enjoy great food.", lat: 38.7164, lng: -9.1477 }
     ]},
     { date: "March 30, 2026", dayOfWeek: "Monday", title: "Fairytale Sintra (Crowd Avoidance)", location: "Sintra (Day Trip)", events: [
-        { time: "9:00 AM", type: 'travel', icon: 'car', title: "Private Driver to Sintra", description: "A private driver is mandatory here to avoid the physical toll of train/bus combos with a 3 and 5-year-old.", lat: 38.7963, lng: -9.3900,
+        { time: "08:30 AM", type: 'travel', icon: 'car', title: "Private Driver Pick-up (MyDaytrip)", description: "Meet your driver in the Martinhal Chiado lobby. Ref: 3K7RFY5D. Car seats for Aarit and Keev included.", lat: 38.7086, lng: -9.1425,
           tips: [
-              { icon: 'calendar', text: 'Why Monday? Doing Sintra on Monday avoids the peak weekend tourist surges.' }
+              { icon: 'info', text: 'Contact: daytrip@daytrip.com | +1 628 288 2020. Trip is prepaid.' }
           ]
         },
-        { time: "10:00 AM", type: 'activity', icon: 'castle', title: "Morning Session: The Palaces", activityOptions: [
-            { name: 'Pena Palace (Exteriors Only)', type: 'Must-Do', isMustDo: true, description: 'The iconic colorful castle. Buy "Park and National Palace of Pena" tickets, but SKIP the interior rooms—they are slow, stuffy, and a nightmare with toddlers. The exterior terraces are the best part anyway.' },
-            { name: 'Quinta da Regaleira', type: 'Must-Do', isMustDo: true, description: 'Alternatively, focus here. The mystical grottoes, hidden tunnels, and initiation wells are a natural adventure playground for Aarit.' }
-        ], lat: 38.7876, lng: -9.3906, tags: ['Adventure'],
+        { time: "09:00 AM", type: 'activity', icon: 'castle', title: "Sintra Sightseeing Route", description: "Lisbon → Queluz Palace (15m stop) → Sintra (4h stop) → Lisbon.", lat: 38.7507, lng: -9.2590, activityOptions: [
+            { name: 'Pena Palace (Exteriors Only)', type: 'Must-Do', isMustDo: true, description: 'The iconic colorful castle. SKIP the interior rooms—they are a nightmare with toddlers. The exterior terraces are the best part anyway.' },
+            { name: 'Quinta da Regaleira', type: 'Must-Do', isMustDo: true, description: 'Natural adventure playground with mystical grottoes and hidden tunnels.' }
+        ], tags: ['Adventure'],
           tips: [
-              { icon: 'footprints', text: 'Warning: Leave the stroller in the car today. Sintra requires walking up steep, uneven paths. A toddler carrier for Keev is essential.' }
+              { icon: 'footprints', text: 'Warning: Leave the stroller in the car today. Sintra requires walking up steep paths. A toddler carrier for Keev is essential.' }
           ]
         },
         { time: "1:30 PM", type: 'dining', icon: 'utensils-crossed', title: "Lunch: Tascantiga", description: "Located in Sintra's historic center, known for excellent tapas and quick service.", lat: 38.7963, lng: -9.3900 },
-        { time: "3:00 PM", type: 'activity', icon: 'leaf', title: "Afternoon Session: Open Space", activityOptions: [
-            { name: 'Monserrate Park', type: 'Must-Do', isMustDo: true, description: 'Unlike the crowded palaces, Monserrate is a massive, stunning botanical garden with gigantic rolling lawns. Let the boys take their shoes off and run wild to burn off energy.' },
-            { name: 'Sintra Village Stroll', type: 'Low Key', isMustDo: false, description: 'Grab an outdoor table in the village, order traditional Queijadas (sweet pastries), and let the kids rest.' }
+        { time: "2:05 PM", type: 'travel', icon: 'home', title: "Estimated Return to Lisbon", description: "Drop-off back at Martinhal Lisbon Chiado.", lat: 38.7086, lng: -9.1425 },
+        { time: "3:30 PM", type: 'activity', icon: 'leaf', title: "Afternoon Session: Open Space", activityOptions: [
+            { name: 'Monserrate Park', type: 'Must-Do', isMustDo: true, description: 'Botanical garden with gigantic rolling lawns. Let the boys run wild.' },
+            { name: 'Sintra Village Stroll', type: 'Low Key', isMustDo: false, description: 'Grab an outdoor table in the village, order traditional Queijadas.' }
         ], lat: 38.7930, lng: -9.4206 },
-        { time: "7:00 PM", type: 'dining', icon: 'glass-water', title: "Dinner: Bairro do Avillez (The Páteo)", description: "Back in Lisbon. An upscale, spectacular grand finale to the Lisbon leg of your trip. The Páteo area is spacious and comfortable.", lat: 38.7093, lng: -9.1420 }
+        { time: "7:00 PM", type: 'dining', icon: 'glass-water', title: "Farewell Lisbon Dinner", description: "Bairro do Avillez (The Páteo). An upscale grand finale to the Lisbon leg of your trip.", lat: 38.7093, lng: -9.1420 }
     ]},
     { date: "March 31, 2026", dayOfWeek: "Tuesday", title: "The Journey South", location: "Lisbon to Algarve", events: [
         { time: "10:00 AM", type: 'travel', icon: 'car', title: "Pick up Rental Car", description: "Pick up your rental car in Lisbon. This one-way rental avoids train transfers.", lat: 38.7742, lng: -9.1342, tags: ['Logistics'],
@@ -323,7 +337,7 @@ let checklists = {
     "Activity Reservations": [
         { text: "São Jorge Castle: Skip-the-line tickets", checked: false },
         { text: "Private Tuk-Tuk Tour (Lisbon)", checked: false },
-        { text: "Private Driver for Sintra", checked: false },
+        { text: "Private Day Trip for Sintra (Prepaid Ref: 3K7RFY5D)", checked: true },
         { text: "Benagil Cave Tour (Request Catamaran & toddler life jackets)", checked: false },
         { text: "Oceanário de Lisboa tickets", checked: false },
         { text: "Lisbon Airport Lounge passes (for layover)", checked: false }
@@ -707,23 +721,55 @@ const renderBookings = () => {
     const transportHtml = `
         <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 md:p-8 mb-8">
             <h2 class="text-2xl font-outfit font-bold text-slate-800 mb-6 flex items-center"><i data-lucide="car" class="w-6 h-6 mr-3 text-teal-600"></i>Ground Transportation</h2>
-            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
-                <h3 class="text-lg font-bold text-slate-800 mb-4">${reservationData.transport.type}</h3>
-                <div class="grid md:grid-cols-2 gap-6 mb-5">
-                    <div class="bg-white p-3 rounded-xl border border-slate-100">
-                        <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Pick-up</span>
-                        <strong class="text-sm text-slate-800 block">${reservationData.transport.pickup}</strong>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Main Rental -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <span class="inline-block px-2 py-0.5 bg-teal-50 text-teal-700 text-[10px] font-bold rounded uppercase tracking-wider mb-2">Main Rental (LIS → FAO)</span>
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">${reservationData.transport.type}</h3>
+                    <div class="grid grid-cols-1 gap-4 mb-5">
+                        <div class="bg-white p-3 rounded-xl border border-slate-100">
+                            <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Pick-up</span>
+                            <strong class="text-sm text-slate-800 block">${reservationData.transport.pickup}</strong>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border border-slate-100">
+                            <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Drop-off</span>
+                            <strong class="text-sm text-slate-800 block">${reservationData.transport.dropoff}</strong>
+                        </div>
                     </div>
-                    <div class="bg-white p-3 rounded-xl border border-slate-100">
-                        <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Drop-off</span>
-                        <strong class="text-sm text-slate-800 block">${reservationData.transport.dropoff}</strong>
+                    <div class="p-3.5 bg-white rounded-xl border border-slate-200 text-sm flex items-start">
+                        <i data-lucide="info" class="w-5 h-5 text-teal-600 mr-2 flex-shrink-0 mt-0.5"></i>
+                        <div>
+                            <span class="font-bold text-slate-800 block mb-0.5">Plan:</span> 
+                            <span class="text-slate-600 leading-relaxed">${reservationData.transport.plan}</span>
+                        </div>
                     </div>
                 </div>
-                <div class="p-3.5 bg-white rounded-xl border border-slate-200 text-sm flex items-start">
-                    <i data-lucide="users" class="w-5 h-5 text-teal-600 mr-2 flex-shrink-0 mt-0.5"></i>
-                    <div>
-                        <span class="font-bold text-slate-800 block mb-0.5">Vehicle Plan:</span> 
-                        <span class="text-slate-600 leading-relaxed">${reservationData.transport.plan}</span>
+
+                <!-- Sintra Day Trip -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <span class="inline-block px-2 py-0.5 bg-teal-50 text-teal-700 text-[10px] font-bold rounded uppercase tracking-wider mb-2">Sintra Private Car (Day Trip)</span>
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-lg font-bold text-slate-800">${reservationData.sintraDayTrip.type}</h3>
+                        <div class="bg-teal-100 text-teal-700 px-2 py-1 rounded text-xs font-bold font-mono">${reservationData.sintraDayTrip.bookingRef}</div>
+                    </div>
+                    <div class="space-y-3 mb-5">
+                        <div class="bg-white p-3 rounded-xl border border-slate-100 flex justify-between items-center">
+                            <div><span class="text-[10px] font-bold text-slate-400 uppercase block">Vehicle</span><strong class="text-sm text-slate-800">${reservationData.sintraDayTrip.vehicle}</strong></div>
+                            <div class="text-right"><span class="text-[10px] font-bold text-slate-400 uppercase block">Price</span><strong class="text-sm text-teal-700">${reservationData.sintraDayTrip.price}</strong></div>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border border-slate-100">
+                            <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Meeting Details</span>
+                            <strong class="text-sm text-slate-800 block">${reservationData.sintraDayTrip.schedule}</strong>
+                            <span class="text-xs text-slate-500 mt-1 block">${reservationData.sintraDayTrip.pickup}</span>
+                        </div>
+                    </div>
+                    <div class="p-3.5 bg-white rounded-xl border border-slate-200 text-sm flex items-start">
+                        <i data-lucide="map" class="w-5 h-5 text-teal-600 mr-2 flex-shrink-0 mt-0.5"></i>
+                        <div>
+                            <span class="font-bold text-slate-800 block mb-0.5">Route:</span> 
+                            <span class="text-slate-600 leading-relaxed text-xs">${reservationData.sintraDayTrip.route}</span>
+                        </div>
                     </div>
                 </div>
             </div>
