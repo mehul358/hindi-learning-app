@@ -2,16 +2,39 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-// Configuration
-const firebaseConfig = JSON.parse(__firebase_config);
+// Configuration - Robust injection check
+let firebaseConfig = null;
+try {
+    const rawConfig = (typeof window !== 'undefined' && window.__firebase_config) 
+        ? window.__firebase_config 
+        : (typeof __firebase_config !== 'undefined' ? __firebase_config : null);
+    
+    if (rawConfig) {
+        firebaseConfig = typeof rawConfig === 'string' ? JSON.parse(rawConfig) : rawConfig;
+    }
+} catch (e) {
+    console.error("Firebase config parsing failed", e);
+}
+
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-portugal-trip';
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+let app = null;
+let db = null;
+let auth = null;
+
+if (firebaseConfig && firebaseConfig.apiKey) {
+    try {
+        app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+    } catch (e) {
+        console.error("Firebase Initialization failed", e);
+    }
+}
 
 // Auth Whitelist
 const WHITELIST = ['mehulagarwal@gmail.com', 'nehal.kedia@gmail.com'];
+const isWhitelisted = (email) => email && WHITELIST.map(e => e.toLowerCase()).includes(email.toLowerCase());
 
 // Core State
 let userId = null;
@@ -339,14 +362,6 @@ const travelGuide = {
     ]}
 };
 
-const sectionTitles = {
-    'itinerary': 'Ultimate Trip Bible',
-    'map': 'Interactive Route Map',
-    'bookings': 'Bookings & Budget',
-    'checklists': 'Preparation Checklists',
-    'guide': 'Family Travel Guide'
-};
-
 // --- Helpers ---
 const generateTripId = () => 'trip-' + Math.random().toString(36).substr(2, 10);
 const getTripId = () => {
@@ -364,7 +379,8 @@ const tripId = getTripId();
 const showToast = (msg = 'Progress saved!') => {
     const toast = document.getElementById('toast-checklist');
     if (!toast) return;
-    document.getElementById('toast-message').textContent = msg;
+    const msgEl = document.getElementById('toast-message');
+    if (msgEl) msgEl.textContent = msg;
     toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
     setTimeout(() => toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4'), 2500);
 };
@@ -392,7 +408,7 @@ const renderSidebarNav = () => {
         </button>`;
     }).join('');
 
-    document.querySelectorAll('nav > div:first-child > .nav-link').forEach(btn => {
+    document.querySelectorAll('nav .nav-link').forEach(btn => {
         const icon = btn.querySelector('i, svg');
         if (btn.dataset.section === currentSection) {
             btn.classList.add('bg-teal-50', 'text-teal-700');
@@ -927,7 +943,8 @@ const renderGuide = () => {
 };
 
 const renderActiveSection = () => {
-    document.getElementById('mobile-header-title').textContent = sectionTitles[currentSection] || 'Trip';
+    const titleEl = document.getElementById('mobile-header-title');
+    if (titleEl) titleEl.textContent = sectionTitles[currentSection] || 'Trip';
     document.querySelectorAll('.main-content-section').forEach(s => s.classList.add('hidden'));
     const activeSection = document.getElementById(`${currentSection}-section`);
     if (activeSection) activeSection.classList.remove('hidden');
@@ -991,67 +1008,82 @@ const startTripStateListener = () => {
 };
 
 const setupFirebase = async () => {
-    try {
-        let config = null;
-        if (typeof window.__firebase_config !== 'undefined') {
-            config = typeof window.__firebase_config === 'string' ? JSON.parse(window.__firebase_config) : window.__firebase_config;
+    const errorEl = document.getElementById('auth-error');
+    if (!auth) {
+        console.error("Firebase Auth not initialized - check config");
+        if (errorEl) {
+            errorEl.textContent = "Database configuration is missing. Auth disabled.";
+            errorEl.classList.remove('hidden');
         }
-        
-        if (config && config.apiKey) {
-            const app = initializeApp(config);
-            db = getFirestore(app);
-            auth = getAuth(app);
+        // Even without auth, show the app in "read-only/local" mode if you want, 
+        // but the requirement says "whitelisted account to access".
+        return;
+    }
 
-            const provider = new GoogleAuthProvider();
-            
-            document.getElementById('google-signin-btn').onclick = async () => {
-                try {
-                    const result = await signInWithPopup(auth, provider);
-                    const user = result.user;
-                    if (!WHITELIST.includes(user.email)) {
-                        await signOut(auth);
-                        const errorEl = document.getElementById('auth-error');
-                        errorEl.textContent = "Access Denied: Email not whitelisted.";
+    const provider = new GoogleAuthProvider();
+    
+    const signInBtn = document.getElementById('google-signin-btn');
+    if (signInBtn) {
+        signInBtn.onclick = async () => {
+            if (errorEl) errorEl.classList.add('hidden');
+            try {
+                console.log("Opening Google Sign-In Popup...");
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                console.log("User signed in:", user.email);
+                
+                if (!isWhitelisted(user.email)) {
+                    console.warn("User not in whitelist:", user.email);
+                    await signOut(auth);
+                    if (errorEl) {
+                        errorEl.textContent = `Access Denied: ${user.email} is not whitelisted.`;
                         errorEl.classList.remove('hidden');
-                    } else {
-                         // User is whitelisted, update display
-                        const display = document.getElementById('user-id-display');
-                        if (display) display.textContent = `User: ${user.email}`;
                     }
-                } catch (error) {
-                    console.error("Login Error:", error);
-                    const errorEl = document.getElementById('auth-error');
-                    errorEl.textContent = "Login failed. Please try again.";
+                }
+            } catch (error) {
+                console.error("Login Error:", error);
+                if (errorEl) {
+                    errorEl.textContent = "Sign-in failed. Check your connection or browser settings.";
                     errorEl.classList.remove('hidden');
                 }
-            };
+            }
+        };
+    }
 
-            document.getElementById('logout-btn').onclick = async () => {
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.onclick = async () => {
+            try {
                 await signOut(auth);
-                // Reload to show the auth overlay again
                 window.location.reload(); 
-            };
+            } catch (e) { console.error("Sign out error", e); }
+        };
+    }
 
-            onAuthStateChanged(auth, (user) => {
-                if (user && WHITELIST.includes(user.email)) {
-                    userId = user.uid;
-                    document.getElementById('auth-overlay').classList.add('opacity-0', 'pointer-events-none');
-                    document.getElementById('app').classList.remove('hidden');
-                    const display = document.getElementById('user-id-display');
-                    if (display) display.textContent = `User: ${user.email}`;
-                    startTripStateListener();
-                } else {
-                    userId = null;
-                    document.getElementById('auth-overlay').classList.remove('opacity-0', 'pointer-events-none');
-                    document.getElementById('app').classList.add('hidden');
-                    // Clear any previous error message on sign out or invalid user
-                    const errorEl = document.getElementById('auth-error');
-                    if (errorEl) errorEl.classList.add('hidden');
-                }
-                createIcons(); // Ensure icons are created after auth state changes
-            });
+    onAuthStateChanged(auth, (user) => {
+        const overlay = document.getElementById('auth-overlay');
+        const appEl = document.getElementById('app');
+        const display = document.getElementById('user-id-display');
+
+        if (user && isWhitelisted(user.email)) {
+            console.log("Auth session active:", user.email);
+            userId = user.uid;
+            if (overlay) overlay.classList.add('opacity-0', 'pointer-events-none');
+            if (appEl) appEl.classList.remove('hidden');
+            if (display) {
+                display.textContent = `User: ${user.email}`;
+                display.classList.remove('hidden');
+            }
+            startTripStateListener();
+        } else {
+            console.log("No active whitelisted session.");
+            userId = null;
+            if (overlay) overlay.classList.remove('opacity-0', 'pointer-events-none');
+            if (appEl) appEl.classList.add('hidden');
+            if (display) display.classList.add('hidden');
         }
-    } catch (e) { console.warn("Firebase Setup Failed:", e); }
+        createIcons();
+    });
 };
 
 // --- Main Init ---
@@ -1059,49 +1091,93 @@ const initApp = () => {
     console.log("Lisbon Trip App Initializing...");
 
     // Event Listeners for Nav
-    document.getElementById('open-sidebar').onclick = () => {
-        document.getElementById('sidebar').classList.remove('-translate-x-full');
-        document.getElementById('sidebar-overlay').classList.remove('opacity-0', 'pointer-events-none');
-    };
-    const closeSidebar = () => {
-        document.getElementById('sidebar').classList.add('-translate-x-full');
-        document.getElementById('sidebar-overlay').classList.add('opacity-0', 'pointer-events-none');
-    };
-    document.getElementById('sidebar-overlay').onclick = closeSidebar;
-    document.getElementById('close-sidebar').onclick = closeSidebar;
+    const openSidebarBtn = document.getElementById('open-sidebar');
+    if (openSidebarBtn) {
+        openSidebarBtn.onclick = () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar) sidebar.classList.remove('-translate-x-full');
+            if (overlay) overlay.classList.remove('opacity-0', 'pointer-events-none');
+        };
+    }
 
-    document.querySelector('nav').onclick = (e) => {
-        const btn = e.target.closest('.nav-link');
-        if (!btn) return;
-        
-        const section = btn.dataset.section;
-        const day = btn.dataset.day ? parseInt(btn.dataset.day) : currentDay;
-        
-        switchSection(section, day);
-        if (window.innerWidth < 768) closeSidebar();
-        
-        const main = document.querySelector('main .overflow-y-auto');
-        if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
-        
-        if (day !== currentDay) saveTripState();
+    const closeSidebar = () => {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        if (sidebar) sidebar.classList.add('-translate-x-full');
+        if (overlay) overlay.classList.add('opacity-0', 'pointer-events-none');
     };
+
+    const overlay = document.getElementById('sidebar-overlay');
+    if (overlay) overlay.onclick = closeSidebar;
+    
+    const closeSidebarBtn = document.getElementById('close-sidebar');
+    if (closeSidebarBtn) closeSidebarBtn.onclick = closeSidebar;
+
+    const nav = document.querySelector('nav');
+    if (nav) {
+        nav.onclick = (e) => {
+            const btn = e.target.closest('.nav-link');
+            if (!btn) return;
+            
+            const section = btn.dataset.section;
+            const day = btn.dataset.day ? parseInt(btn.dataset.day) : currentDay;
+            
+            switchSection(section, day);
+            if (window.innerWidth < 768) closeSidebar();
+            
+            const main = document.querySelector('main .overflow-y-auto');
+            if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            if (day !== currentDay) saveTripState();
+        };
+    }
 
     // Modal Listeners
-    document.getElementById('share-trip-btn').onclick = () => {
-        const url = new URL(window.location.href);
-        url.searchParams.set('trip', tripId);
-        document.getElementById('share-trip-link').value = url.toString();
-        document.getElementById('share-trip-modal').classList.remove('opacity-0', 'pointer-events-none');
-    };
-    document.getElementById('close-share-modal').onclick = () => document.getElementById('share-trip-modal').classList.add('opacity-0', 'pointer-events-none');
-    document.getElementById('copy-share-link').onclick = () => {
-        const input = document.getElementById('share-trip-link');
-        input.select();
-        document.execCommand('copy');
-        showToast('Link copied to clipboard!');
-    };
-    document.getElementById('leave-shared-trip').onclick = () => { localStorage.removeItem('tripId'); window.location.href = window.location.pathname; };
-    document.getElementById('show-user-id').onclick = () => document.getElementById('user-id-display').classList.toggle('hidden');
+    const shareBtn = document.getElementById('share-trip-btn');
+    if (shareBtn) {
+        shareBtn.onclick = () => {
+            const url = new URL(window.location.href);
+            url.searchParams.set('trip', tripId);
+            const linkInput = document.getElementById('share-trip-link');
+            if (linkInput) linkInput.value = url.toString();
+            const modal = document.getElementById('share-trip-modal');
+            if (modal) modal.classList.remove('opacity-0', 'pointer-events-none');
+        };
+    }
+
+    const closeShareBtn = document.getElementById('close-share-modal');
+    if (closeShareBtn) {
+        closeShareBtn.onclick = () => {
+            const modal = document.getElementById('share-trip-modal');
+            if (modal) modal.classList.add('opacity-0', 'pointer-events-none');
+        };
+    }
+
+    const copyBtn = document.getElementById('copy-share-link');
+    if (copyBtn) {
+        copyBtn.onclick = () => {
+            const input = document.getElementById('share-trip-link');
+            if (input) {
+                input.select();
+                document.execCommand('copy');
+                showToast('Link copied to clipboard!');
+            }
+        };
+    }
+
+    const leaveBtn = document.getElementById('leave-shared-trip');
+    if (leaveBtn) {
+        leaveBtn.onclick = () => { localStorage.removeItem('tripId'); window.location.href = window.location.pathname; };
+    }
+
+    const showUserIdBtn = document.getElementById('show-user-id');
+    if (showUserIdBtn) {
+        showUserIdBtn.onclick = () => {
+            const display = document.getElementById('user-id-display');
+            if (display) display.classList.toggle('hidden');
+        };
+    }
 
     // Initial Static Render
     renderSidebarNav();
