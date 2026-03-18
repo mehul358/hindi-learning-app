@@ -2,9 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import firebaseConfig from './firebase-config.js';
 
-// Configuration - Robust injection check
-// The firebaseConfig is now imported, so no need for window.__firebase_config
-
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-portugal-trip';
 
 let app = null;
@@ -125,8 +122,7 @@ const itineraryData = [
         },
         { time: "1:30 PM", type: 'rest', icon: 'key-round', title: "Settle in at Martinhal Chiado", description: "Drop your bags. Official check-in is 3:00 PM, but you can utilize the hotel facilities immediately.", mapLink: "https://www.google.com/maps/search/Martinhal+Lisbon+Chiado", lat: 38.7086, lng: -9.1425, tags: ['Lodging', 'Kid-Friendly'],
           tips: [
-              { icon: 'info', text: 'Baby Concierge: Ask the front desk for anything you forgot (bottle warmers, potties, specific toddler gear).' },
-              { icon: 'coffee', text: 'While waiting for the room, let the boys decompress in the lobby playroom while you grab a coffee at the M Bar.' }
+              { icon: 'info', text: 'Baby Concierge: Ask the front desk for anything you forgot (bottle warmers, potties, specific toddler gear).' }
           ] 
         },
         { time: "3:30 PM", type: 'activity', icon: 'footprints', title: "Afternoon Session: Stretch Your Legs", activityOptions: [
@@ -275,7 +271,7 @@ const itineraryData = [
         ], lat: 37.1511, lng: -8.7663 },
         { time: "7:00 PM", type: 'dining', icon: 'glass-water', title: "Happy 10th Anniversary! (Praia Dourada)", description: "Celebrate 10 years! It’s a chic, upscale restaurant located directly on the resort's beach.", lat: 37.1017, lng: -8.3813, tags: ['Special Event', 'Kid-Friendly'],
           tips: [
-              { icon: 'star', text: 'The Setup: Request a table right on the edge of the sand. You and Nehal can enjoy fantastic food, cocktails, and sunset views while Aarit and Keev play safely in the sand right next to your table.' }
+              { icon: 'star', text: 'The Setup: Request a table right on the sand edge. You and Nehal can enjoy fantastic food, cocktails, and sunset views while Aarit and Keev play safely in the sand right next to your table.' }
           ]
         }
     ]},
@@ -1064,14 +1060,11 @@ const startTripStateListener = () => {
 };
 
 const setupFirebase = async () => {
-    console.log("Persistence: Local mode active. Cloud sync pending config.");
     startTripStateListener();
 };
 
 // --- Main Init ---
 const initApp = () => {
-    console.log("Lisbon Trip App Initializing...");
-
     // 1. Load from LocalStorage first for instant results
     loadLocalState();
 
