@@ -1,19 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import firebaseConfig from './firebase-config.js';
 
 // Configuration - Robust injection check
-let firebaseConfig = null;
-try {
-    const rawConfig = (typeof window !== 'undefined' && window.__firebase_config) 
-        ? window.__firebase_config 
-        : (typeof __firebase_config !== 'undefined' ? __firebase_config : null);
-    
-    if (rawConfig) {
-        firebaseConfig = typeof rawConfig === 'string' ? JSON.parse(rawConfig) : rawConfig;
-    }
-} catch (e) {
-    console.error("Firebase config parsing failed", e);
-}
+// The firebaseConfig is now imported, so no need for window.__firebase_config
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-portugal-trip';
 
