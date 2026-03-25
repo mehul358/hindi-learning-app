@@ -1,11 +1,50 @@
 // --- Text-to-Speech Helper ---
+let availableVoices = [];
+let voiceMap = {}; // Cache for selected voices by language
+
+const loadVoices = () => {
+  availableVoices = window.speechSynthesis.getVoices();
+  // console.log("Available voices loaded:", availableVoices);
+
+  // Function to find the best voice for a given language
+  const findBestVoice = (langPrefix) => {
+    // Prioritize Google voices, then Microsoft, then any other
+    const googleVoice = availableVoices.find(v => v.lang.startsWith(langPrefix) && v.name.includes('Google'));
+    if (googleVoice) return googleVoice;
+
+    const microsoftVoice = availableVoices.find(v => v.lang.startsWith(langPrefix) && v.name.includes('Microsoft'));
+    if (microsoftVoice) return microsoftVoice;
+
+    return availableVoices.find(v => v.lang.startsWith(langPrefix));
+  };
+
+  voiceMap['en-US'] = findBestVoice('en-');
+  voiceMap['pt-PT'] = findBestVoice('pt-');
+  // voiceMap['hi-IN'] = findBestVoice('hi-'); // Not used here, but good for consistency if needed elsewhere
+};
+
+// Load voices initially and whenever they change
+if ('speechSynthesis' in window) {
+  loadVoices();
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+}
+
 const speakText = (text, lang = 'en-US') => {
   if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel();
     const msg = new SpeechSynthesisUtterance(text);
     msg.lang = lang;
-    msg.rate = 0.85; 
-    msg.pitch = 1.1; 
+    msg.rate = 0.85;
+    msg.pitch = 1.1;
+
+    // Assign a voice from our cached map
+    if (voiceMap[lang]) {
+      msg.voice = voiceMap[lang];
+    } else {
+      // Fallback if voice not found in map (should not happen if loadVoices worked)
+      msg.voice = availableVoices.find(v => v.lang.startsWith(lang.substring(0, 2))) || null;
+    }
+
     window.speechSynthesis.speak(msg);
   }
 };
@@ -172,7 +211,7 @@ const HomePage = ({ onOpenMenu }) => (
 
     React.createElement('div', { className: "bg-white rounded-3xl p-6 shadow-lg border-4 border-blue-200 mb-8 max-w-3xl mx-auto" },
       React.createElement('h2', { className: "font-fredoka text-2xl text-blue-600 mb-4 flex items-center gap-2" },
-        "🗺️ Where are we going?", " ", React.createElement(SpeakerButton, { text: "Portugal is in Europe, right next to the big Atlantic Ocean! We will fly on an airplane, then visit the capital city Lisbon, and the beautiful beaches of the Algarve!" })
+        "🗺️ Where are we going? ", React.createElement(SpeakerButton, { text: "Portugal is in Europe, right next to the big Atlantic Ocean! We will fly on an airplane, then visit the capital city Lisbon, and the beautiful beaches of the Algarve!" })
       ),
 
       React.createElement('div', { className: "relative pl-8 border-l-4 border-dashed border-sky-300 space-y-8 my-6" },
@@ -210,16 +249,16 @@ const HomePage = ({ onOpenMenu }) => (
         { id: 'history', icon: '⛵', title: 'Stories', color: 'bg-amber-300 border-amber-500 text-amber-900' },
         { id: 'words', icon: '💬', title: 'Say It!', color: 'bg-purple-300 border-purple-500 text-purple-900' },
         { id: 'animals', icon: '🐬', title: 'Animals', color: 'bg-teal-300 border-teal-500 text-teal-900' }
-      ].map(btn => (
+      ].map(btn =>
         React.createElement('button', {
           key: btn.id,
-          onClick: () => { document.querySelector('.animate-fade-in').parentElement.parentElement.__reactFiber$?.return?.stateNode?.setCurrentPage?.(btn.id) || window.dispatchEvent(new CustomEvent('navTo', {detail: btn.id})); },
+          onClick: () => { document.querySelector('.animate-fade-in').parentElement.parentElement.__reactFiber$?.return?.stateNode?.setCurrentPage?.(btn.id) || window.dispatchEvent(new CustomEvent('navTo', { detail: btn.id })); },
           className: `${btn.color} border-b-4 hover:-translate-y-1 hover:brightness-110 active:translate-y-1 active:border-b-0 rounded-3xl p-4 flex flex-col items-center justify-center shadow-md transition-all group`
         },
           React.createElement('span', { className: "text-4xl md:text-5xl mb-2 group-hover:scale-110 transition-transform" }, btn.icon),
           React.createElement('span', { className: "font-fredoka text-lg md:text-xl" }, btn.title)
         )
-      ))
+      )
     )
   )
 );
@@ -237,7 +276,7 @@ const LisbonPage = () => {
 
       React.createElement('div', { className: "bg-white rounded-3xl p-6 shadow-xl mb-8 border-4 border-yellow-400 flex flex-col items-center" },
         React.createElement('h2', { className: "font-fredoka text-3xl text-yellow-600 mb-4 flex items-center gap-2" },
-          "Tap the Tram!", " ", React.createElement(SpeakerButton, { text: "Lisbon has big hills and cool yellow trams! Tap the tram to ring the bell." })
+          "Tap the Tram! ", React.createElement(SpeakerButton, { text: "Lisbon has big hills and cool yellow trams! Tap the tram to ring the bell." })
         ),
         React.createElement('div', { className: "flex flex-col md:flex-row gap-8 items-center justify-center" },
           React.createElement('div', { className: "flex flex-col items-center cursor-pointer group", onClick: ringBell },
@@ -274,7 +313,7 @@ const AlgarvePage = () => {
 
       React.createElement('div', { className: "bg-white rounded-3xl p-6 shadow-xl mb-8 border-4 border-blue-400" },
         React.createElement('h2', { className: "font-fredoka text-3xl text-blue-600 mb-4 text-center flex items-center justify-center gap-2" },
-          "Tap the water!", " ", React.createElement(SpeakerButton, { text: "The Algarve has the best beaches and blue water. Tap the ocean to make the dolphin jump!" })
+          "Tap the water! ", React.createElement(SpeakerButton, { text: "The Algarve has the best beaches and blue water. Tap the ocean to make the dolphin jump!" })
         ),
         React.createElement('div', { className: "relative w-full h-48 md:h-64 bg-sky-200 rounded-2xl overflow-hidden border-4 border-sky-300 flex items-end justify-center pb-2 cursor-pointer", onClick: makeDolphinJump },
           React.createElement('div', { className: "absolute bottom-0 w-full h-1/2 bg-blue-500 opacity-60 rounded-t-[100px]" }),
@@ -317,7 +356,7 @@ const FoodPage = () => {
 
       React.createElement('div', { className: "bg-white rounded-3xl p-6 shadow-xl mb-8 border-4 border-orange-400 flex flex-col items-center" },
         React.createElement('h2', { className: "font-fredoka text-3xl text-orange-600 mb-2 flex items-center justify-center gap-2" },
-          "Pastéis de Nata!", " ", React.createElement(SpeakerButton, { text: "Pastéis de Nata! The most famous Portuguese treat. Sweet egg custard in crispy pastry! Tap the tart below to eat it!" })
+          "Pastéis de Nata! ", React.createElement(SpeakerButton, { text: "Pastéis de Nata! The most famous Portuguese treat. Sweet egg custard in crispy pastry! Tap the tart below to eat it!" })
         ),
         React.createElement('p', { className: "font-nunito font-bold text-gray-600 mb-6 text-center max-w-md" },
           "The most famous Portuguese treat. Sweet egg custard in crispy pastry! Tap to eat it!"
@@ -329,14 +368,14 @@ const FoodPage = () => {
 
       React.createElement('h2', { className: "font-fredoka text-2xl text-rose-600 mb-4 ml-2" }, "More Yummy Foods to Try:"),
       React.createElement('div', { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" },
-        foods.map((f, i) => (
-          React.createElement('div', { key: i, className: `rounded-2xl p-5 border-b-4 ${f.color} shadow-md flex flex-col items-center text-center cursor-pointer hover:scale-105 transition-transform`, onClick: () => speakText(`${f.title}. ${f.desc}`) },
+        foods.map((f, i) =>
+          React.createElement('div', { key: i, onClick: () => speakText(`${f.title}. ${f.desc}`), className: `rounded-2xl p-5 border-b-4 ${f.color} shadow-md flex flex-col items-center text-center cursor-pointer hover:scale-105 transition-transform` },
             React.createElement('span', { className: "text-6xl mb-2" }, f.emoji),
             React.createElement('h3', { className: "font-fredoka text-xl mb-1" }, f.title),
             React.createElement('p', { className: "font-nunito font-bold text-sm opacity-80" }, f.desc),
             React.createElement('div', { className: "mt-2 text-yellow-500" }, "⭐⭐⭐⭐⭐")
           )
-        ))
+        )
       )
     )
   );
@@ -373,10 +412,10 @@ const LanguagePage = () => {
       React.createElement(SectionHero, { emoji: "💬", title: "Speak Portuguese!", subtitle: "Learn words to surprise everyone!", bgClass: "bg-gradient-to-br from-purple-400 to-sky-400" }),
 
       React.createElement('h2', { className: "font-fredoka text-2xl text-purple-600 mb-4 ml-2 flex items-center gap-2" },
-        "Words & Phrases ", React.createElement(SpeakerButton, { text: "Tap the buttons to hear how to say these words in Portuguese!" })
+        "Words & Phrases ", React.createElement(SpeakerButton, { text: "Tap the buttons to hear how to say these words in Portuguese!", lang: "en-US" })
       ),
       React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4 mb-10" },
-        words.map((w, i) => (
+        words.map((w, i) =>
           React.createElement('button', { key: i, onClick: () => speakText(w.pt, 'pt-PT'), className: "bg-white border-b-4 border-purple-300 rounded-2xl p-4 flex items-center justify-between shadow-sm hover:bg-purple-50 active:scale-95 transition-all group" },
             React.createElement('div', { className: "text-left" },
               React.createElement('div', { className: "font-fredoka text-2xl text-purple-700" }, w.pt),
@@ -385,17 +424,17 @@ const LanguagePage = () => {
             ),
             React.createElement('div', { className: "text-5xl group-hover:scale-110 transition-transform" }, w.emoji)
           )
-        ))
+        )
       ),
 
       React.createElement('h2', { className: "font-fredoka text-2xl text-sky-600 mb-4 ml-2" }, "Count to 10!"),
       React.createElement('div', { className: "flex flex-wrap gap-3 justify-center" },
-        numbers.map((num, i) => (
+        numbers.map((num, i) =>
           React.createElement('button', { key: i, onClick: () => speakText(num.pt, 'pt-PT'), className: `bg-white border-b-4 ${num.color} rounded-2xl p-4 min-w-[90px] shadow-sm hover:scale-105 active:scale-95 transition-all flex flex-col items-center` },
             React.createElement('span', { className: `font-fredoka text-4xl ${num.color.split(' ')[0]}` }, num.n),
             React.createElement('span', { className: "font-nunito font-bold text-gray-600 text-lg" }, num.pt)
           )
-        ))
+        )
       )
     )
   );
@@ -416,14 +455,14 @@ const AnimalsPage = () => {
       React.createElement(SectionHero, { emoji: "🐬", title: "Amazing Animals!", subtitle: "Look out for these creatures!", bgClass: "bg-gradient-to-br from-teal-400 to-sky-400" }),
 
       React.createElement('div', { className: "grid grid-cols-2 md:grid-cols-3 gap-4" },
-        animals.map((a, i) => (
+        animals.map((a, i) =>
           React.createElement('div', { key: i, onClick: () => speakText(`${a.en}! ${a.text}`), className: "bg-white rounded-3xl p-5 shadow-lg border-b-4 border-teal-200 text-center cursor-pointer hover:scale-105 transition-transform flex flex-col items-center" },
             React.createElement('span', { className: "text-6xl md:text-7xl mb-2" }, a.emoji),
             React.createElement('h3', { className: "font-fredoka text-lg text-teal-700" }, a.name),
             React.createElement('p', { className: "font-nunito font-bold text-gray-500 text-sm mb-2" }, a.en),
             React.createElement('span', { className: "bg-yellow-100 text-yellow-800 text-xs font-bold px-3 py-1 rounded-full border border-yellow-300" }, a.tag)
           )
-        ))
+        )
       )
     )
   );
@@ -443,7 +482,7 @@ const HistoryPage = () => {
 
       React.createElement('div', { className: "bg-white rounded-3xl p-6 shadow-xl mb-8 border-4 border-blue-400" },
         React.createElement('h2', { className: "font-fredoka text-3xl text-blue-600 mb-4 text-center flex items-center justify-center gap-2" },
-          "Sail the Ship!", " ", React.createElement(SpeakerButton, { text: "Long ago, Portuguese explorers sailed giant ships across the ocean! Tap the water to make the ship sail!" })
+          "Sail the Ship! ", React.createElement(SpeakerButton, { text: "Long ago, Portuguese explorers sailed giant ships across the ocean! Tap the water to make the ship sail!" })
         ),
         React.createElement('div', { className: "relative w-full h-48 md:h-64 bg-sky-300 rounded-2xl overflow-hidden border-4 border-sky-400 flex items-end justify-center pb-2 cursor-pointer", onClick: startSailing },
           React.createElement('div', { className: "absolute bottom-0 w-full h-1/2 bg-blue-600 opacity-70 rounded-t-[100px]" }),
@@ -523,7 +562,7 @@ const QuizPage = () => {
     if (qIdx < questions.length - 1) setQIdx(qIdx + 1);
     else {
       setQuizFinished(true);
-      speakText(`Quiz finished! You got ${score + (selected===questions[qIdx].ans?1:0)} out of ${questions.length}!`);
+      speakText(`Quiz finished! You got ${score + (selected === questions[qIdx].ans ? 1 : 0)} out of ${questions.length}!`);
     }
   };
 
@@ -651,7 +690,7 @@ const PackingPage = () => {
   const [packed, setPacked] = React.useState({});
   const togglePack = (item) => {
     // This safely strips the emojis from the beginning so it speaks clearly
-    const itemName = item.replace(/[^ -]/g, "").trim();
+    const itemName = item.replace(/[^ - ]/g, "").trim();
     setPacked(p => ({ ...p, [item]: !p[item] }));
     if (!packed[item]) speakText(`Packed ${itemName}!`, "en-US");
     else speakText(`Unpacked ${itemName}!`, "en-US");
@@ -675,7 +714,7 @@ const PackingPage = () => {
           packedCount === totalItems ? '🎉 All packed! Ready to fly! ✈️' : `✅ ${packedCount} of ${totalItems} items packed!`
         ),
 
-        sections.map((sec, i) => (
+        sections.map((sec, i) =>
           React.createElement('div', { key: i, className: "mb-6" },
             React.createElement('h3', { className: `font-fredoka text-xl mb-3 ${sec.color}` }, sec.title),
             React.createElement('div', { className: "flex flex-wrap gap-2 md:gap-3" },
@@ -694,7 +733,7 @@ const PackingPage = () => {
               })
             )
           )
-        ))
+        )
       )
     )
   );
@@ -735,22 +774,19 @@ const SingPage = () => {
 
 // --- Global Styles Injection ---
 const GlobalStyles = () => (
-  React.createElement('style', null, `
-    @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap');
+  React.createElement('style', null, `@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap');
     .font-fredoka { font-family: 'Fredoka One', cursive; }
     .font-nunito { font-family: 'Nunito', sans-serif; }
     .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; transform: translateY(10px); } \n      to { opacity: 1; transform: translateY(0); }
     }
     body {
       background-color: #FFF9F0;
       background-image: radial-gradient(circle, #ffd93d44 2px, transparent 2px), radial-gradient(circle, #ff6b3533 1px, transparent 1px);
       background-size: 60px 60px, 30px 30px;
       background-position: 0 0, 15px 15px;
-    }
-  `)
+    }`))
 );
 
 // --- Main App Component ---
