@@ -690,7 +690,7 @@ const PackingPage = () => {
   const [packed, setPacked] = React.useState({});
   const togglePack = (item) => {
     // This safely strips the emojis from the beginning so it speaks clearly
-    const itemName = item.replace(/[^ - ]/g, "").trim();
+    const itemName = item.replace(/[^ -]/g, "").trim();
     setPacked(p => ({ ...p, [item]: !p[item] }));
     if (!packed[item]) speakText(`Packed ${itemName}!`, "en-US");
     else speakText(`Unpacked ${itemName}!`, "en-US");
