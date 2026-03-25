@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hindi Fun! Sentences</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Balsamiq+Sans:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="text-gray-800">
+
+    <div id="app-container">
+        <div id="splash-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
+            <video id="splash-video" playsinline>
+                <source src="../logo.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <button id="play-splash-btn" class="hidden absolute inset-0 flex items-center justify-center">
+                <div class="bg-black bg-opacity-50 rounded-full p-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+            </button>
+            <button id="skip-splash-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <!-- Main Content Area -->
+        <main class="opacity-0 transition-opacity duration-500">
+            <div id="loading-spinner" class="absolute inset-0 flex items-center justify-center bg-white z-40"></div>
+            
+            <!-- Lessons Section -->
+            <section id="lessons" class="page-section"></section>
+
+            <!-- Speak & Repeat Section -->
+            <section id="speak" class="page-section"></section>
+
+            <!-- Stories Section -->
+            <section id="stories" class="page-section"></section>
+
+            <!-- Quiz Section -->
+            <section id="quiz" class="page-section"></section>
+
+            <!-- Pack Game Section -->
+            <section id="pack" class="page-section"></section>
+
+            <!-- I Spy Game Section -->
+            <section id="ispy" class="page-section"></section>
+
+            <!-- Word Game Section -->
+            <section id="word" class="page-section"></section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="page-section">
+                <div class="space-y-6 max-w-md mx-auto">
+                    <div>
+                        <label for="english-voice-select" class="block text-lg font-medium text-gray-700">English Voice</label>
+                        <select id="english-voice-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-lg p-2"></select>
+                    </div>
+                    <div>
+                        <label for="hindi-voice-select" class="block text-lg font-medium text-gray-700">Hindi Voice</label>
+                        <select id="hindi-voice-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-lg p-2"></select>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Side Panel -->
+        <div id="side-panel-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden"></div>
+        <div id="side-panel" class="fixed top-0 left-0 h-full bg-white w-72 shadow-xl z-40 transform -translate-x-full transition-transform duration-300 ease-in-out">
+            <!-- Panel Content will be injected by JS -->
+        </div>
+
+        <!-- Hamburger Menu Button -->
+        <button id="menu-btn" class="fixed top-4 left-4 z-50 p-2 rounded-md bg-white bg-opacity-75" style="z-index: 101; display: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span id="feedback-emoji" class="text-8xl"></span>
+            <p id="feedback-text" class="text-3xl font-balsamiq text-gray-700"></p>
+        </div>
+    </div>
+    
+    <!-- Confetti Container -->
+    <div id="confetti-container" class="confetti"></div>
+
+    <!-- Reward Animation Container -->
+    <div id="reward-animation" class="fixed inset-0 bg-white z-50 hidden items-center justify-center"></div>
+
+    <script src="../js/app.js"></script>
+</body>
+</html>
