@@ -32,3 +32,16 @@ h1, h2, h3, h4, .font-outfit { font-family: var(--font-heading); }
     letter-spacing: 0.5px;
     border: 1px solid #ccd5ae;
 }
+
+.tip-badge {
+    background-color: #0a9396;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-right: 5px;
+    display: inline-block;
+    vertical-align: middle;
+}
